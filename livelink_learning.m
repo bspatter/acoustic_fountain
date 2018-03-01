@@ -5,7 +5,7 @@ if false
 end
 if false && ~exist('mymodel','var')
     mymodel = mphload('E:/brandon_learning/livelink_learning.mph','histmodel');
-    mphlaunch
+    mphlaunch histmodel
 end
 
 %%
@@ -13,7 +13,7 @@ end
 length_per_pixel=scale40x();
 
 
-%%
+
 % Create new model and geometry
 % histology_model =ModelUtil.create('myModel');
 % g1 = histology_model.geom.create('g1',2);
@@ -21,8 +21,9 @@ length_per_pixel=scale40x();
 % Convert histology image into a model and geometry
 load('histology_image.mat','hist_image')
 % hist_geometry = mphimage2geom(hist_image,0.5,'minarea',200,'scale',length_per_pixel,'rectangle','on');
-hist_geometry = mphimage2geom(hist_image,0.5,'minarea',200,'scale',length_per_pixel,'modeltag','alveoli_model');
-figure(2); mphgeom(hist_geometry)
+% hist_geometry = mphimage2geom(hist_image,0.5,'minarea',200,'scale',length_per_pixel,'modeltag','alveoli_model','rtol',1e-3);
+hist_geometry = mphimage2geom(hist_image,0.5,'minarea',200,'scale',length_per_pixel,'modeltag','alveoli_model','rtol',1e-1);
+figure(3); mphgeom(hist_geometry)
 
 % Get tags of existing model and geometry
 geometry_tags = hist_geometry.geom.tags();
@@ -34,6 +35,8 @@ geom1_features = geom1.feature().tags;
 
 % Get bounds of current domain
 nn_ = 1:(length(geom1_features)-1);
+
+
 
 for nn = nn_
     % Get the features of the old geometry
@@ -50,6 +53,8 @@ for nn = nn_
 %     c(nn).set('y',yy*length_per_pixel)
 %     hist_geometry.geom(geometry_tags(1)).feature(geom1_features(nn)).set('x',xx*length_per_pixel);
 %     hist_geometry.geom(geometry_tags(1)).feature(geom1_features(nn)).set('y',xx*length_per_pixel);
+
+
 end
 
 geom1.feature.create('wetspace','Rectangle')
