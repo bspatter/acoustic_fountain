@@ -42,12 +42,16 @@ try
     fnames = ls([fdir '*.avi']); %All video file names in the relevant directory
     NN = length(fnames);
     fountain_data=struct('filename','','filepath','','CaseCode',CaseCode,'CaseNumber','','date_of_experiment','','time_of_experiment','',...
-        'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[]);
+        'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
     fountain_data = repmat(fountain_data,[NN,1]);
     
-    for nn = 13:14;%1:NN
+    
+    
+    for nn = 1:NN
         fname = fnames(nn,:); %Specific video file name
         fpath = [fdir,fname]; % Path to video file
+        
+        if contains(fname,'Ruler'); continue; end
         
         v =VideoReader(fpath);
         v.CurrentTime = 0; % just for debugging for now;
@@ -143,9 +147,9 @@ try
             
             
             
-            if ii > 600
-                break
-            end
+%             if ii > 2
+%                 break
+%             end
         end
         
         % remove trailing zeros and data from far before the fountain
@@ -177,15 +181,17 @@ try
         fountain_data(nn).time_raw = time;
         fountain_data(nn).time = time - time(1);
         fountain_data(nn).frame_number = frame_number;
+        fountain_data(nn).camera_data = readcih(strrep(fname,'.avi','.cih'));
         
         toc
+        nn
     end
     
 catch myerror
     rethrow(myerror)
 end
 
-if true
+if false
     hhh = figure(3); %axes; hold on;
     jj=1; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3); hold on
     jj=2; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
@@ -193,7 +199,22 @@ if true
     xlabel('time (ms)')
     ylabel('Fountain height (mm)')
     spiffyp(hhh)
+    
+elseif true  
+    hhh = figure(4); %axes; hold on;
+    axes;
+    mycolors = get(gca,'ColorOrder')
+    for jj = 1:42;        
+        pp(jj) = plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3,'Color',mycolors(floor((jj-1)/6)+1,:)); 
+        hold on        
+    end
+    xlabel('time (ms)')
+    ylabel('Fountain height (mm)')
+    legend(pp(1:6:end),'-00 dB', '-02 dB', '-04 dB', '-06 dB', '-08 dB', '-10 dB', '-12 dB')
+    spiffyp(hhh)    
 end
+
+save(sprintf('fountain_data_%s_%s.mat',CaseCode,fountain_data(nn).date_of_experiment),'fountain_data')
 
 end
 
