@@ -1,137 +1,207 @@
-function [] = process_fountain_videos()
+function fountain_data = process_fountain_videos()
 % Syntax:  [output] = function_name(inputs)
 %
-% Inputs: 
-%   1. 
+% Inputs:
+%   1.
 %
 % Outputs:
-%	1. 
-% 
-% Example: 
-% 
-% 
-% Other m-files required: 
-% 
-% Subfunctions: 
-% 
-% MAT-files required: 
+%	1.
 %
-% See also: 
-% 
+% Example:
+%
+%
+% Other m-files required:
+%
+% Subfunctions:
+%
+% MAT-files required:
+%
+% See also:
+%
 % Author: Brandon patterson
 % email address: i.am.brandon.patterson@gmail.com
-% 
+%
 % Copyright (C) 2018, Brandon Patterson
 %
 % Last revision: 03-01-2018
 
 clc; clear; close all;
 
-% fdir='E:/brandon/research/acoustic_fountain/';
-
-strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
-
-% 2018-04-16 : Fountain images taken on 2018-04-05
-% based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
-
-CaseCode = 'Db';
-basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
-
-if true
+try
+    tic
+    
+    strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
+    
+    % 2018-04-16 : Fountain images taken on 2018-04-05
+    % based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
+    
+    CaseCode = 'Db';
+    basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
+    
     fdir=sprintf('%s%s/',basedir,CaseCode);
     fnames = ls([fdir '*.avi']); %All video file names in the relevant directory
-    fname = fnames(1,:); %Specific video file name
-    fpath = [fdir,fname]; % Path to video file
+    NN = length(fnames);
+    fountain_data=struct('filename','','filepath','','CaseCode',CaseCode,'CaseNumber','','date_of_experiment','','time_of_experiment','',...
+        'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[]);
+    fountain_data = repmat(fountain_data,[NN,1]);
     
-    v =VideoReader(fpath);
-    v.CurrentTime = 5.0; % just for debugging for now;
-    
-    frame = readFrame(v);    
-    frame0 = frame;    
-    
-    frame_index = {89:size(frame0,1), 129:640};
-
-    vidframe0=frame0(frame_index{:}); %extract only the video (lose the border)  %
-    vidframe = vidframe0;
-    vidframe0b = imbinarize(vidframe0);
-    vidframeb = imbinarize(vidframe);
-    vidframezeros = zeros(size(vidframe0));
-    
-    ii = 0;
-    
-    while hasFrame(v)
+    for nn = 13:14;%1:NN
+        fname = fnames(nn,:); %Specific video file name
+        fpath = [fdir,fname]; % Path to video file
+        
+        v =VideoReader(fpath);
+        v.CurrentTime = 0; % just for debugging for now;
+        
         frame = readFrame(v);
-        vidframe = frame(frame_index{:});
-        diffimage = imsubtract(vidframe,vidframe0);
-
-        [vidframe_ind_x, vidframe_ind_y] = meshgrid(1:size(vidframe,1), 1:size(vidframe,1));
+        frame0 = frame;
         
+        frame_index = {89:size(frame0,1), 129:640};
+        
+        vidframe0=frame0(frame_index{:}); %extract only the video (lose the border)  %
+        vidframe = vidframe0;
+        vidframe0b = imbinarize(vidframe0);
         vidframeb = imbinarize(vidframe);
-        vidframeb_clean = vidframeb;
-
-        vidframeb_clean = imfill(vidframeb_clean,'holes'); %Fill the holes in the middle
-
-        first_left_hole = find(~vidframeb_clean,1);
-        if first_left_hole < size(vidframeb_clean/2)
-%             vidframeb_clean = imfill(vidframeb_clean,first_left_hole); 
+        vidframezeros = zeros(size(vidframe0));
+        
+        [fountain_height_pix,frame_number,y_interface,y_fountain]=deal(zeros(50e3,1));
+        
+        ii = 0;
+        
+        while hasFrame(v)
+            ii = ii+1; % counter
+            
+            %read a frame and extract the part of it with the image (scrap the photron border)
+            frame = readFrame(v);
+            vidframe = frame(frame_index{:});
+            
+            % build a grid of indices the size of the frame
+            [vidframe_ind_x, vidframe_ind_y] = meshgrid(1:size(vidframe,1), 1:size(vidframe,1));
+            
+            % binarize the image, based on pixel intensity
+            vidframeb = imbinarize(vidframe);
+            
+            % clean up the image, to identify only the fountain.
+            vidframeb_clean = vidframeb;
+            vidframeb_clean = imfill(vidframeb_clean,'holes'); %Fill the holes in the middle
+            first_left_hole = find(~vidframeb_clean,1);
+            if first_left_hole < size(vidframeb_clean)/2
+                vidframeb_clean = imfill(vidframeb_clean,first_left_hole);
+            end
+            
+            % find and clean weird left edge noise
+            edge_x_threshold = floor(size(vidframeb_clean,2)/10); %pixles left of this not counted as part of fountain
+            noise_bounds = sum(vidframeb(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
+            noise_bounds0 = [find(noise_bounds~=max(noise_bounds),1,'first') find(noise_bounds==min(noise_bounds),1,'first') ];
+            vidframeb_clean2 = vidframeb_clean;
+            intf_maxy_threshold = max(noise_bounds0)-3;
+            vidframeb_clean2(intf_maxy_threshold,(1:edge_x_threshold)) = true;
+            vidframeb_clean2(1:intf_maxy_threshold,1) = true;
+            vidframeb_clean2=imfill(vidframeb_clean2,'holes');
+            leftnoise = imsubtract(vidframeb_clean2,vidframeb_clean);
+            
+            vidframeb_clean = logical((vidframeb_clean-leftnoise));
+            
+            
+            % Determine the y-location of top and bottom of fountain
+            y_interface(ii) = max(max(vidframe_ind_y(vidframeb_clean == 1)));
+            y_fountain(ii) = min(min(vidframe_ind_y(~vidframeb_clean == 1)));
+            
+            % Identify location of drops leaving the top frame and prevent them from registering as part
+            % of the fountain by manually removing them w/ imfill which doesn't notice edge holes automatically.
+            while y_fountain(ii) == 1                
+                tophole_ind = size(vidframeb_clean,1)*(find(flipud(~imrotate(vidframeb_clean,90)),1)-1)+1; % find the location of the hole at the top
+                vidframeb_clean = imfill(vidframeb_clean,tophole_ind);
+                y_fountain(ii) = min(min(vidframe_ind_y(~vidframeb_clean == 1)));
+            end
+            
+            frame_number(ii) = ii;
+            fountain_height_pix(ii) = y_interface(ii) - y_fountain(ii);
+            
+            
+            % Plots and stuff
+            if false %|| ii > 133
+                figure(1)
+                try % Commented commands should increase performance, but some internal bug is breaking things after a set number of frames;
+                    %                 if exist('hh','var')
+                    %                     hh.CData = vidframeb;
+                    %                 else
+                    hh = imshow(vidframeb);
+                    %                 end
+                    hold on
+                    %                 if exist('p1','var')
+                    %                     p1.YData = intf_y*[1,1];
+                    %                     p2.YData = fountain_y*[1,1];
+                    %                 else
+                    p1 = plot([0,size(vidframe_ind_x,2)], y_interface(ii)*[1,1],'r','linewidth',2);
+                    p2 = plot([0,size(vidframe_ind_x,2)], y_fountain(ii)*[1,1],'r','linewidth',2);
+                    %                 end
+                    drawnow
+                catch
+                    continue
+                end
+            end
+            
+            
+            
+            if ii > 600
+                break
+            end
         end
         
-%         vidframeb_clean = imclearborder(vidframeb_clean);
+        % remove trailing zeros and data from far before the fountain
+        flast = find(fountain_height_pix,1,'last');
         
+        % remove initial
+        fountain_threshold = 0.04*max(fountain_height_pix-fountain_height_pix(1)); %minimum height at which a fountain is initiated)
+        f0 = max([1, find((fountain_height_pix-fountain_height_pix(1))>fountain_threshold,1,'first')-10]); % Frame number 10 frames before the height exceeds the threshold height based on fountain max (or first frame)
         
+        fountain_height_pix = fountain_height_pix(f0:flast);
+        frame_number = frame_number(f0:flast);
+        y_interface = y_interface(f0:flast);
+        y_fountain = y_fountain(f0:flast);
+        time = frame_number/20000;
         
-        fountain_im = imsubtract(vidframe0b,vidframeb);
-        fountain_im(fountain_im==-1) = 0; % Not sure what the -1's are, but they need to be removed.
+        % Save fountain data into a structure
+        experiment_info = strsplit(fname,'_');
+        fountain_data(nn).filename = fname;
+        fountain_data(nn).filepath = fpath;
+        fountain_data(nn).CaseNumber = experiment_info{1};
+        fountain_data(nn).date_of_experiment = experiment_info{2};
+        fountain_data(nn).time_of_experiment = strtrim(experiment_info{3});
+        fountain_data(nn).time_of_experiment = fountain_data(nn).time_of_experiment(isstrprop(fountain_data(nn).time_of_experiment,'digit'));
+        fountain_data(nn).fountain_height_pix = fountain_height_pix;
+        fountain_data(nn).m_per_pix = getscale(fountain_data(nn).CaseCode,fountain_data(nn).date_of_experiment);
+        fountain_data(nn).fountain_height = fountain_data(nn).fountain_height_pix * fountain_data(nn).m_per_pix;
+        fountain_data(nn).y_interface = y_interface;
+        fountain_data(nn).y_fountain = y_fountain;
+        fountain_data(nn).time_raw = time;
+        fountain_data(nn).time = time - time(1);
+        fountain_data(nn).frame_number = frame_number;
         
-        
-        intf_y = max(max(vidframe_ind_y(vidframeb_clean == 1)));        
-        fountain_y = min(min(vidframe_ind_y(~vidframeb_clean == 1)));
-        
-        % Deal with drops leaving the top registering as part of the fountain b/c imfill can't handle them.
-        if fountain_y == 1
-            imshow(vidframeb);
-            tophole_ind = size(vidframeb,1)*find(flipud(~imrotate(vidframeb,90)),1)+1; % find the location of the hole at the top
-            vidframeb_clean = imfill(vidframeb_clean,tophole_ind);
-            fountain_y = min(min(vidframe_ind_y(~vidframeb_clean == 1)));            
-        end
-        
-        figure(1)
-        imshow(vidframeb);
-        hold on
-%         if false && exist('p1','var')
-%            p1.YData = intf_y*[1,1];
-%            p2.YData = fountain_y*[1,1];
-%         else
-            p1 = plot([0,size(vidframe_ind_x,2)], intf_y*[1,1],'r','linewidth',2);
-            p2 = plot([0,size(vidframe_ind_x,2)], fountain_y*[1,1],'r','linewidth',2);
-%         end
-        
-        
-%         fountain_ind = find(fountain_im);
-%         fountain_base_ind = max(vidframe_ind_y(fountain_ind)); %Works for base, should plot to check;
-        
-%         fountain_imb = imbinarize(fountain_im);
-%         fountain_only_imb = ~imfill(~fountain_imb,'holes'); %may be useful in isolationg fountain from drops
-        
-        
-%         a = diff(fountain_im,1,1);
-%         absa=logical([abs(a); zeros(1,size(a,2))]);
-        
-
-        
-%         b = find(a);
-%         nn = [b; size(fountain_im,1)] - [0; b]
-        
-%         figure; pcolor(vidframe_ind_x, vidframe_ind_y,[a; zeros(1,512)])
-        
-%           i = find(diff(fountain_im)) 
-%           n = [i numel(fountain_im)] - [0 i]
-%           c = arrayfun(@(X) X-1:-1:0, n , 'un',0)
-%           y = cat(2,c{:})
-        pause(0.05)
+        toc
     end
     
-    
+catch myerror
+    rethrow(myerror)
 end
 
+if true
+    hhh = figure(3); %axes; hold on;
+    jj=1; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3); hold on
+    jj=2; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
+    jj=3; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
+    xlabel('time (ms)')
+    ylabel('Fountain height (mm)')
+    spiffyp(hhh)
+end
+
+end
+
+function meter_per_pixel = getscale(casecode,casedate)
+if strcmp(casecode, 'Db') && strcmp(casedate,'20180424')
+    meter_per_pixel = 0.01 / sqrt((543-188)^2+(395-395)^2);
+end
+end
+
+% function camera_data = read_cih_file(cih_fpath)
 
