@@ -27,31 +27,37 @@ function fountain_data = process_fountain_videos()
 
 clc; clear; close all;
 
-try
-    tic
+
+tic
+
+strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
+
+% 2018-04-16 : Fountain images taken on 2018-04-05
+% based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
+
+CaseCode = 'Da';
+date_of_experiment='20180521';
+basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
+
+fdir=sprintf('%s%s_%s/',basedir,CaseCode,date_of_experiment);
+fnames = ls([fdir '*.avi']); %All video file names in the relevant directory
+fnames = fnames(~arrayfun(@(x) contains(x,'Ruler'), string(fnames)),:); % Remove the calibration ruler files
+NN = length(fnames);
+fountain_data=struct('filename','','filepath','','CaseCode',CaseCode,'CaseNumber','','date_of_experiment','','time_of_experiment','',...
+    'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
+fountain_data = repmat(fountain_data,[NN,1]);
+
+%     if strcmp(CaseCode,'Da'); water_flag = true;else water_flag = false; end
+
+% Loop over videos
+for nn = 1:NN%:-1:1%:NN
     
-    strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
-    
-    % 2018-04-16 : Fountain images taken on 2018-04-05
-    % based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
-    
-    CaseCode = 'Db';
-    basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
-    
-    fdir=sprintf('%s%s/',basedir,CaseCode);
-    fnames = ls([fdir '*.avi']); %All video file names in the relevant directory
-    NN = length(fnames);
-    fountain_data=struct('filename','','filepath','','CaseCode',CaseCode,'CaseNumber','','date_of_experiment','','time_of_experiment','',...
-        'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
-    fountain_data = repmat(fountain_data,[NN,1]);
-    
-    
-    
-    for nn = 1:NN
+    try
         fname = fnames(nn,:); %Specific video file name
         fpath = [fdir,fname]; % Path to video file
         
         if contains(fname,'Ruler'); continue; end
+        fprintf('\nnn = %g/%g,      Processing %s\n',nn,NN,fname)
         
         v =VideoReader(fpath);
         v.CurrentTime = 0; % just for debugging for now;
@@ -65,10 +71,28 @@ try
         vidframe = vidframe0;
         vidframe0b = imbinarize(vidframe0);
         vidframeb = imbinarize(vidframe);
-        vidframezeros = zeros(size(vidframe0));
         
+        mid_graythreshold = graythresh(vidframe);
+        %Used to fix certain bad lighting situations, which break imbinarize
+        bad_lighting_flag = false;
+        if any(all(~vidframe0b)) || any(all(vidframe0b)) || bad_lighting_flag %If there are lines of all black or white
+            bad_lighting_flag=true;
+            mid_graythreshold = graythresh(vidframe(:,round(0.1*size(vidframe)):0.9*size(vidframe)));                        
+            %%
+%             vidframe0b = imbinarize(vidframe0,mid_graythreshold);
+            vidframeb = imbinarize(vidframe,mid_graythreshold);            
+        end
+        
+        % Not sure if this actually helped anything
+        while sum(vidframeb(:)) < numel(vidframeb)*2/3 % If the image is more than 1/3 black, somethign is wrong, reduce the gray threshold
+            mid_graythreshold = mid_graythreshold*0.9;
+            bad_lighting_flag=true;
+            vidframeb = imbinarize(vidframe,mid_graythreshold);            
+        end        
+                
+        % Initialize variables
         [fountain_height_pix,frame_number,y_interface,y_fountain]=deal(zeros(50e3,1));
-        
+        vidframezeros = zeros(size(vidframe0));        
         ii = 0;
         
         while hasFrame(v)
@@ -82,7 +106,11 @@ try
             [vidframe_ind_x, vidframe_ind_y] = meshgrid(1:size(vidframe,1), 1:size(vidframe,1));
             
             % binarize the image, based on pixel intensity
-            vidframeb = imbinarize(vidframe);
+            if ~bad_lighting_flag
+                vidframeb = imbinarize(vidframe);
+            else
+                vidframeb = imbinarize(vidframe,mid_graythreshold); %Right now, this keeps using the same gray threshold for every frame, may need to adjust this to recalculate in the loop
+            end            
             
             % clean up the image, to identify only the fountain.
             vidframeb_clean = vidframeb;
@@ -92,18 +120,40 @@ try
                 vidframeb_clean = imfill(vidframeb_clean,first_left_hole);
             end
             
+            
+            
+            % SOMETHING LIKE THIS SHOWS PROMISE FOR FILLING IN THE LIGHT SPOTS ON FOUNTAIN
+%              figure; imshow(~imfill(~(vf2b-(imsubtract(vidframe,vidframe0)>10)),'holes'))
+            
+            
             % find and clean weird left edge noise
             edge_x_threshold = floor(size(vidframeb_clean,2)/10); %pixles left of this not counted as part of fountain
-            noise_bounds = sum(vidframeb(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
-            noise_bounds0 = [find(noise_bounds~=max(noise_bounds),1,'first') find(noise_bounds==min(noise_bounds),1,'first') ];
+%             noise_bounds = sum(vidframeb(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
+            %CHANGED ABOVE TO USE vidframeb_clean THIS SEEMS TO WORK
+            noise_bounds_R = sum(vidframeb_clean(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
+            %
+            % May not work
+            noise_bounds0_R = [find(noise_bounds_R~=max(noise_bounds_R),1,'first') find(noise_bounds_R==min(noise_bounds_R),1,'first') ]; %First row with noise, first column with noise
+            %            
             vidframeb_clean2 = vidframeb_clean;
-            intf_maxy_threshold = max(noise_bounds0)-3;
-            vidframeb_clean2(intf_maxy_threshold,(1:edge_x_threshold)) = true;
-            vidframeb_clean2(1:intf_maxy_threshold,1) = true;
+            intf_maxy_threshold_R = max([1,(max(noise_bounds0_R)-3)]);
+            vidframeb_clean2(intf_maxy_threshold_R,(1:edge_x_threshold)) = true; %Fill a specific column
+            vidframeb_clean2(1:intf_maxy_threshold_R,1) = true; %Fill first row
             vidframeb_clean2=imfill(vidframeb_clean2,'holes');
-            leftnoise = imsubtract(vidframeb_clean2,vidframeb_clean);
+            leftnoise = imsubtract(vidframeb_clean2,vidframeb_clean);           
+            vidframeb_clean = logical((vidframeb_clean-leftnoise));            
             
-            vidframeb_clean = logical((vidframeb_clean-leftnoise));
+            % find and clean weird left edge noise
+            edge_x_threshold = floor(size(vidframeb_clean,2)/10); %pixles left of this not counted as part of fountain            
+            noise_bounds_R = sum(vidframeb_clean(:,end:-1:(end-edge_x_threshold+1)),2);% Look at the left 10% of the frame and sum            
+            noise_bounds0_R = [find(noise_bounds_R~=max(noise_bounds_R),1,'first') find(noise_bounds_R==min(noise_bounds_R),1,'first') ]; %First row with noise, first column with noise                        
+            vidframeb_clean2 = vidframeb_clean;
+            intf_maxy_threshold_R = max([1,(max(noise_bounds0_R)-3)]);
+            vidframeb_clean2(intf_maxy_threshold_R,(end:-1:(end-edge_x_threshold+1))) = true; %Fill a specific column
+            vidframeb_clean2(1:intf_maxy_threshold_R,end) = true; %Fill first row
+            vidframeb_clean2=imfill(vidframeb_clean2,'holes');
+            rightnoise = imsubtract(vidframeb_clean2,vidframeb_clean);           
+            vidframeb_clean = logical((vidframeb_clean-rightnoise));               
             
             
             % Determine the y-location of top and bottom of fountain
@@ -112,7 +162,7 @@ try
             
             % Identify location of drops leaving the top frame and prevent them from registering as part
             % of the fountain by manually removing them w/ imfill which doesn't notice edge holes automatically.
-            while y_fountain(ii) == 1                
+            while y_fountain(ii) == 1
                 tophole_ind = size(vidframeb_clean,1)*(find(flipud(~imrotate(vidframeb_clean,90)),1)-1)+1; % find the location of the hole at the top
                 vidframeb_clean = imfill(vidframeb_clean,tophole_ind);
                 y_fountain(ii) = min(min(vidframe_ind_y(~vidframeb_clean == 1)));
@@ -120,16 +170,15 @@ try
             
             frame_number(ii) = ii;
             fountain_height_pix(ii) = y_interface(ii) - y_fountain(ii);
-            
-            
-            % Plots and stuff
+                        
+            % Plots fountain in real time
             if false %|| ii > 133
                 figure(1)
                 try % Commented commands should increase performance, but some internal bug is breaking things after a set number of frames;
                     %                 if exist('hh','var')
                     %                     hh.CData = vidframeb;
                     %                 else
-                    hh = imshow(vidframeb);
+                    hh = imshowpair(vidframeb_clean,vidframe,'montage');
                     %                 end
                     hold on
                     %                 if exist('p1','var')
@@ -144,12 +193,6 @@ try
                     continue
                 end
             end
-            
-            
-            
-%             if ii > 2
-%                 break
-%             end
         end
         
         % remove trailing zeros and data from far before the fountain
@@ -181,47 +224,62 @@ try
         fountain_data(nn).time_raw = time;
         fountain_data(nn).time = time - time(1);
         fountain_data(nn).frame_number = frame_number;
-        fountain_data(nn).camera_data = readcih(strrep(fname,'.avi','.cih'));
+        fountain_data(nn).camera_data = readcih(sprintf('%s%s',fdir,strrep(fname,'.avi','.cih')));
         
         toc
-        nn
+        
+    catch myerror        
+        fprintf('Broke at nn = %d, ii = %d, Case: %s\n',nn,ii,fname)        
+        toc
+        continue
+        rethrow(myerror)        
     end
-    
-catch myerror
-    rethrow(myerror)
 end
 
-if false
-    hhh = figure(3); %axes; hold on;
-    jj=1; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3); hold on
-    jj=2; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
-    jj=3; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
-    xlabel('time (ms)')
-    ylabel('Fountain height (mm)')
-    spiffyp(hhh)
-    
-elseif true  
-    hhh = figure(4); %axes; hold on;
-    axes;
-    mycolors = get(gca,'ColorOrder')
-    for jj = 1:42;        
-        pp(jj) = plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3,'Color',mycolors(floor((jj-1)/6)+1,:)); 
-        hold on        
+try 
+    if false
+        hhh = figure(3); %axes; hold on;
+        jj=1; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3); hold on
+        jj=2; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
+        jj=3; plot(fountain_data(jj).time*1e3,fountain_data(jj).fountain_height*1e3)
+        xlabel('time (ms)')
+        ylabel('Fountain height (mm)')
+        spiffyp(hhh)
+
+    elseif true
+        hhh = figure(4); %axes; hold on;
+        clf(4)
+        axes;
+        mycolors = get(gca,'ColorOrder');
+        jj0=5;
+        for jj = jj0:42;
+            pp(jj) = plot(fountain_data(jj).time(1:length(fountain_data(jj).fountain_height))*1e3,fountain_data(jj).fountain_height*1e3,'Color',mycolors(floor((jj-1)/6)+1,:));
+            hold on
+        end
+        xlabel('time (ms)')
+        ylabel('Fountain height (mm)')
+        legend(pp(jj0:6:end),'-00 dB', '-02 dB', '-04 dB', '-06 dB', '-08 dB', '-10 dB', '-12 dB')
+        spiffyp(hhh)
+        xlim([0,35])
     end
-    xlabel('time (ms)')
-    ylabel('Fountain height (mm)')
-    legend(pp(1:6:end),'-00 dB', '-02 dB', '-04 dB', '-06 dB', '-08 dB', '-10 dB', '-12 dB')
-    spiffyp(hhh)    
+catch
 end
 
-save(sprintf('fountain_data_%s_%s.mat',CaseCode,fountain_data(nn).date_of_experiment),'fountain_data')
+save(sprintf('%s/fountain_data_%s_%s.mat',fdir,CaseCode,fountain_data(nn).date_of_experiment),'fountain_data')
 
 end
 
 function meter_per_pixel = getscale(casecode,casedate)
 if strcmp(casecode, 'Db') && strcmp(casedate,'20180424')
     meter_per_pixel = 0.01 / sqrt((543-188)^2+(395-395)^2);
+elseif strcmp(casecode, 'Da') && strcmp(casedate,'20180521')
+    meter_per_pixel = 0.01 / sqrt((603-185)^2+(352-355)^2);
+elseif strcmp(casecode, 'Da') && strcmp(casedate,'20180518')
+    meter_per_pixel = 0.01 / sqrt((138-561)^2+(340-338)^2);
+elseif strcmp(casecode, 'Da') && strcmp(casedate,'20180417')
+    meter_per_pixel = 0.01 / sqrt((43-421)^2+(178-177)^2);
 end
+
 end
 
 % function camera_data = read_cih_file(cih_fpath)

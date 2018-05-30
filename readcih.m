@@ -14,9 +14,9 @@ function [ImageData] = readcih(filename)
 %   --------
 %   % Load all metadata
 %   I=readmraw('c:\Photron\example.cih'); 
-filename = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/Db/D1b1_20180424_135525.cih';
+% filename = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/Db/D1b1_20180424_135525.cih';
 fid=fopen(sprintf('%s',filename),'r');
-if fid<1; display([filename ' filenames could not be found']); ImageData=0; return; end
+if fid<1; fprintf('%s filenames could not be found',filename); ImageData=0; return; end
 
 tline = fgetl(fid);
 
@@ -25,7 +25,7 @@ ii = 0;
 mystructargs={};
 
 while ischar(tline)
-    disp(tline)
+%     disp(tline)
     tline = fgetl(fid);
     if strcmp(tline,'#Photron Fastcam Viewer Version Information:')
         break
@@ -44,11 +44,11 @@ while ischar(tline)
     myfieldname = strrep(myfieldname,'(','_');
     myfieldname = strrep(myfieldname,')','_');
     myfieldname = strip(myfieldname,'right','_');
+    myfieldname(myfieldname(1)=='_')=[];   
     
-    
-    if ~isvarname(myfieldname) 
-       pause 
-    end
+%     if ~isvarname(myfieldname) 
+%        pause 
+%     end
     
     myfieldvalue = strtrim(strcat(linestr{2:end}));
     [~,isvalueanumber] = str2num(myfieldvalue);
