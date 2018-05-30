@@ -35,7 +35,7 @@ strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
 % based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
 
 if true
-    fdir='E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
+    fdir='E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/Da/';
     fnames = ls([fdir '*.avi']);
     fname = fnames(2,:);
     fpath = [fdir,fname];
