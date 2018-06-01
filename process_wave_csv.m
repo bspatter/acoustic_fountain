@@ -17,7 +17,7 @@ fpath = sprintf('E:/brandon/research/acoustic_fountain/wavedata/%s',us_machine);
 csvnames = ls([fpath '/tek*.csv']);
 NN = size(csvnames,1);
 
-for n = 8%:40%38:45%NN-1;%[6,20:24]%0:24
+for n = 11%:40%38:45%NN-1;%[6,20:24]%0:24
     close all
     try
         filename = sprintf('%s/tek%04.0fCH1.csv',fpath,n);
