@@ -1,4 +1,4 @@
-function [Pressure_out] = derate_wave(time,Pressure,depth, attenuation_dB_cmMHz)
+function [Pressure_derated, time_derated] = derate_wave(time,Pressure,depth_cm, attenuation_dB_cmMHz)
 %   process_wave_csv.m
 %
 %
@@ -6,7 +6,8 @@ function [Pressure_out] = derate_wave(time,Pressure,depth, attenuation_dB_cmMHz)
 %   Remarks
 %   -------
 %
-%   Author: Brandon Patterson                   Creation Date: May 11,2018
+%   Author: Brandon Patterson                   Creation Date: May 31,2018
+%   Acknowledgements - Thanks to Brian Worthmann for the fft functions used here.
 %
 %   Examples
 %   --------
@@ -15,10 +16,13 @@ function [Pressure_out] = derate_wave(time,Pressure,depth, attenuation_dB_cmMHz)
 f0 = 1e6; % Reference frequency (Hz), at which all reference quantities are defined
 c0 = 1540; % Reference speed of sound (m/s) at f0
 
-alpha0_dB_cm = attenuation_dB_cmMHz; % 0.3 dB/cm/MHz = 3e-5 dB/m/Hz (reference attenuation coefficient)
+alpha0_dB_cmMHz = attenuation_dB_cmMHz; % 0.3 dB/cm/MHz = 3e-5 dB/m/Hz (reference attenuation coefficient)
 alpha0_dB = alpha0_dB_cmMHz*100/1e6; % 0.3 dB/m/Hz (reference attenuation coefficient)
 alpha0 = alpha0_dB*log(10)/10;% 1 Np = 20 log10(e) dB ~= 8.685889638 dB % For intensity derating
 alpha0_p = alpha0_dB*log(10)/20;% 1 Np = 20 log10(e) dB ~= 8.685889638 dB % For pressure derating
+
+% Depth
+depth = depth_cm/100; % Convert input depth (cm) to meters
 d = depth;%0.0125; % Distance from measurement to transducer (I went with the depth of the interface)
 
 
@@ -51,7 +55,7 @@ dominant_frequency = f(dominant_frequency_index);
 betaprime=@(ff) alpha0_p.*ff.*(1-((2*pi*1j*log(ff./f0))./(pi^2+c0*alpha0_p*log(ff./f0))) );
 AmplitudeCorrection = 10.^(-(betaprime(f+1e-15)).*d./20);%function(f); %this is where 10^(-attenuation(f)/10) would go, except you'd use 10^(-attenuation(f)/20) for a pressure field and the other one for a power/intensity
 
-Y_derated = Y.*AmplitudeCorrection;
+Y_derated = Y(:).*AmplitudeCorrection(:);
 y_derated =  bifft(Y_derated);
 
 
@@ -73,7 +77,7 @@ if true
     %axes; hold on;
     h1=subplot(1,2,1); hold on
     plot(t*1e6,y/1e6);
-    plot(t*1e6,yNew/1e6); hold off;
+    plot(t*1e6,y_derated/1e6); hold off;
 
     ylabel('Pressure (MPa)')
     xlabel('time (\mus)')
@@ -114,7 +118,8 @@ end
 
 
 
-
+Pressure_derated = y_derated;
+time_derated = t;
 
 
 
