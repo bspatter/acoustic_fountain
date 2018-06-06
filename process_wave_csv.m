@@ -17,7 +17,9 @@ fpath = sprintf('E:/brandon/research/acoustic_fountain/wavedata/%s',us_machine);
 csvnames = ls([fpath '/tek*.csv']);
 NN = size(csvnames,1);
 
-for n = 11%:40%38:45%NN-1;%[6,20:24]%0:24
+% [resolved_waves] = [3, 8:14, 20:24]
+
+for n = [3, 8:14, 20:24] %:40%38:45%NN-1;%[6,20:24]%0:24
     close all
     try
         filename = sprintf('%s/tek%04.0fCH1.csv',fpath,n);
@@ -254,7 +256,9 @@ for n = 11%:40%38:45%NN-1;%[6,20:24]%0:24
         
         if ~(max(frequency_spectrum)==pulse_frequency)
             MI = abs(min(pulse_pressure_MPa))/sqrt(pulse_frequency/1e6);
+            UnderResolved_flag = false;
         else
+            UnderResolved_flag = true;
             MI = 0;
         end
         
@@ -342,6 +346,43 @@ for n = 11%:40%38:45%NN-1;%[6,20:24]%0:24
             pulse_notes =strrep(pulse_notes,'---','');
         end
         drawnow
+        
+        
+        % derated wave stuff
+        if ~UnderResolved_flag
+            depth_cm = 0.5;
+            attenuation_dB_cmMHz = 1.1;
+            
+            [Pressure_derated, time_derated] = derate_wave(time,Pressure,depth_cm, attenuation_dB_cmMHz);
+            
+            g2 = figure(7);
+            rated_plot = plot(time_micro,Pressure_MPa);hold on            
+            plot(time_micro(pulse_left_boundary_index)*[1,1],h1.YLim,'linewidth',1,'Color','r','linestyle','--')
+            plot(time_micro(pulse_right_boundary_index)*[1,1],h1.YLim,'linewidth',1,'Color','r','linestyle','--')
+            
+            derated_plot = plot(time_derated*1e6,Pressure_derated/1e6,'Color',colors('bright pink'),'LineStyle','-.');
+            
+            %FIX THIS
+            xlimmin = time_micro(max([(pulse_range_indeces(1) + round(range(pulse_range_indeces)*-0.15)),1]));
+            xlimmax = time_micro(min([(pulse_range_indeces(2) + round(range(pulse_range_indeces)*+0.15)), length(time_micro)]));
+            %     xlim(time_micro(pulse_range_indeces + range(pulse_range_indeces)*2*[-1, +1]))
+            %         xlim(time_micro(pulse_range_indeces + round(range(pulse_range_indeces)*0.15*[-1, +1])))
+            xlim([xlimmin,xlimmax])
+            %     tt(3) = text(time_micro(pulse_left_boundary_index)+round(range(pulse_range_indeces)*0.975), max(h1.YLim)*0.975,sprintf('Pulse\nboundary'),'Color','r','VerticalAlignment','top','HorizontalAlignment','right');
+            tt(3) = text(min(xlim()+0.025*range(xlim())), max(h1.YLim)*0.975,sprintf('Pulse\nboundary'),'Color','r','VerticalAlignment','top','HorizontalAlignment','left');
+            xlabel('Time (\mus)')
+            ylabel('Pressure (MPa)')
+            
+            ll=legend([rated_plot, derated_plot],'Original Wave', sprintf('Derated Wave: d=%3.1gcm, \\alpha=%2.1f dB/cm/MHz',depth_cm,attenuation_dB_cmMHz));
+%             ll.Interpreter = 'latex';
+            spiffyp(g2)
+%             figure(g2)
+            if false
+                xlswritefig(g2,outfname,'Sheet1','M69')
+            end
+            
+        end
+        
         
         if false
             delete(outfname)

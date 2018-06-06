@@ -2,7 +2,19 @@ function [Pressure_derated, time_derated] = derate_wave(time,Pressure,depth_cm, 
 %   process_wave_csv.m
 %
 %
-%   %
+% Syntax:  [Pressure_derated, time_derated] = derate_wave(time,Pressure,depth_cm, attenuation_dB_cmMHz)
+%
+% Inputs: 
+%   1. time (in seconds)
+%   2. Pressure (in Pa)
+%   3. depth (in centimeters)
+%   4. frequency dependent attenuation coefficient (in dB/cm/MHz)
+%
+% Outputs:
+%	1. 
+% 
+% Example: 
+%   
 %   Remarks
 %   -------
 %
@@ -26,8 +38,10 @@ depth = depth_cm/100; % Convert input depth (cm) to meters
 d = depth;%0.0125; % Distance from measurement to transducer (I went with the depth of the interface)
 
 
+
 % Bring the wave into the frequency domain
-time = time-time(1); % start time from 0;
+t0_original = time(1);
+time = time-t0_original; % start time from 0;
 T=range(time); % Total time
 fs = 1/mean(diff(time)); % sampling frequency
 N = round(T*fs); %number of data points
@@ -72,7 +86,7 @@ y_linearized_scaled_derated = y_linearized_scaled*exp(-alpha0_p*dominant_frequen
 
 
 % FFT plot of pulse
-if true
+if false
     figure(1);clf(1)
     %axes; hold on;
     h1=subplot(1,2,1); hold on
@@ -119,73 +133,73 @@ end
 
 
 Pressure_derated = y_derated;
-time_derated = t;
+time_derated = t+t0_original;
 
 
-
-function [ freqdata ] = bfft( timedata )
-    [rows,columns]=size(timedata);
-    
-    if columns>rows %I want each column to be the complete fourier information
-        timedata=transpose(timedata);
-    end
-    
-    L=round(max(size(timedata))/2)*2; %Account for possibility that L is not a power of 2
-    NN=min(size(timedata));
-    freqdata=zeros(L/2+1,NN);
-    
-    for i=1:NN
-        temptimedata=timedata(:,i); %Assign the ith column
-        temp=conj(fft(temptimedata)); %FFT Convention enforced
-        freqdata(:,i)=temp(1:L/2+1); %Grab only the information before the folding frequency
-    end
-    
-    if columns>rows %switch it back if necessary
-        freqdata=transpose(freqdata);
-    end
-
-
-
-
-
-function [ timedata ] = bifft( freqdata )
-    [rows,columns]=size(freqdata);
-    
-    if columns>rows %I want each column to be the complete fourier information
-        freqdata=transpose(freqdata);
-    end
-    
-    L=2*max(size(freqdata))-2;
-    NN=min(size(freqdata));
-    timedata=zeros(L,NN);
-    
-    for i=1:NN
-        tempfreqdata=freqdata(:,i); %Assign the ith column
-        
-        tempfreqdata(1)=real(tempfreqdata(1)); %Force the DC bin to be real, otherwise the time domain has a constant imaginary component. As below, a sign change here doesn't change the realness. Not sure what's "most" correct lol...
-
-        L=2*length(tempfreqdata)-2; %Length of time output, such that Length(freq)=L/2+1
-        preIFFT=zeros(L,1); %Prepare a full-length vector for IFFT
-        preIFFT(1:L/2+1)=tempfreqdata; %Assign the freq data to first half
-        temp=conj(flipud(tempfreqdata)); %Flip freq data, conjugate and store
-        preIFFT(L/2+1:L)=temp(1:L/2); %Assign the flipped data, skipping the first data point
-        preIFFT(L/2+1)=real(preIFFT(L/2+1)); %Force the folding frequency to be real (abs or real part?) - I'm choosing the real part, since having a negative number here doesn't destroy the real-ness of the time data
-        timedata(:,i)=ifft(conj(preIFFT)); %Fixed for FFT Convention
-    end
-    
-    if columns>rows %switch it back if necessary
-        timedata=transpose(timedata);
-    end
-        
-    
-    %Psuedocode for the preIFFT setup:
-    %Step 1: 0 0 0 0 0 0 // Create Empty Vector of Zeroes
-    %Step 2: 1 2 3 4 0 0 // Assign first half of Freq Data from 1 to L/2+1
-    %Step 3: store 4 3 2 1 // FlipLR, Conjugate, and store
-    %Step 4: 1 2 3 4 3 2 // Assign this stored info to L/2+1 to L
-    %Step 5: 1 2 3 4 3 2 // Force the "4" to become real
-    %Step 6: IFFT
-
-
+% 
+% function [ freqdata ] = bfft( timedata )
+%     [rows,columns]=size(timedata);
+%     
+%     if columns>rows %I want each column to be the complete fourier information
+%         timedata=transpose(timedata);
+%     end
+%     
+%     L=round(max(size(timedata))/2)*2; %Account for possibility that L is not a power of 2
+%     NN=min(size(timedata));
+%     freqdata=zeros(L/2+1,NN);
+%     
+%     for i=1:NN
+%         temptimedata=timedata(:,i); %Assign the ith column
+%         temp=conj(fft(temptimedata)); %FFT Convention enforced
+%         freqdata(:,i)=temp(1:L/2+1); %Grab only the information before the folding frequency
+%     end
+%     
+%     if columns>rows %switch it back if necessary
+%         freqdata=transpose(freqdata);
+%     end
+% 
+% 
+% 
+% 
+% 
+% function [ timedata ] = bifft( freqdata )
+%     [rows,columns]=size(freqdata);
+%     
+%     if columns>rows %I want each column to be the complete fourier information
+%         freqdata=transpose(freqdata);
+%     end
+%     
+%     L=2*max(size(freqdata))-2;
+%     NN=min(size(freqdata));
+%     timedata=zeros(L,NN);
+%     
+%     for i=1:NN
+%         tempfreqdata=freqdata(:,i); %Assign the ith column
+%         
+%         tempfreqdata(1)=real(tempfreqdata(1)); %Force the DC bin to be real, otherwise the time domain has a constant imaginary component. As below, a sign change here doesn't change the realness. Not sure what's "most" correct lol...
+% 
+%         L=2*length(tempfreqdata)-2; %Length of time output, such that Length(freq)=L/2+1
+%         preIFFT=zeros(L,1); %Prepare a full-length vector for IFFT
+%         preIFFT(1:L/2+1)=tempfreqdata; %Assign the freq data to first half
+%         temp=conj(flipud(tempfreqdata)); %Flip freq data, conjugate and store
+%         preIFFT(L/2+1:L)=temp(1:L/2); %Assign the flipped data, skipping the first data point
+%         preIFFT(L/2+1)=real(preIFFT(L/2+1)); %Force the folding frequency to be real (abs or real part?) - I'm choosing the real part, since having a negative number here doesn't destroy the real-ness of the time data
+%         timedata(:,i)=ifft(conj(preIFFT)); %Fixed for FFT Convention
+%     end
+%     
+%     if columns>rows %switch it back if necessary
+%         timedata=transpose(timedata);
+%     end
+%         
+%     
+%     %Psuedocode for the preIFFT setup:
+%     %Step 1: 0 0 0 0 0 0 // Create Empty Vector of Zeroes
+%     %Step 2: 1 2 3 4 0 0 // Assign first half of Freq Data from 1 to L/2+1
+%     %Step 3: store 4 3 2 1 // FlipLR, Conjugate, and store
+%     %Step 4: 1 2 3 4 3 2 // Assign this stored info to L/2+1 to L
+%     %Step 5: 1 2 3 4 3 2 // Force the "4" to become real
+%     %Step 6: IFFT
+% 
+% 
 
 
