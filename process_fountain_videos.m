@@ -62,7 +62,7 @@ end
 
 
 % Loop over videos
-for nn = 3:NN%:-1:1%:NN
+for nn = 1:NN%:-1:1%:NN
     
     try
         fname = fnames(nn,:); %Specific video file name
@@ -156,10 +156,10 @@ for nn = 3:NN%:-1:1%:NN
             
             % find and clean weird left edge noise
             edge_x_threshold = floor(size(vidframeb_clean,2)/10); %pixles left of this not counted as part of fountain
-            %             noise_bounds = sum(vidframeb(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
+            
             %CHANGED ABOVE TO USE vidframeb_clean THIS SEEMS TO WORK
             noise_bounds_R = sum(vidframeb_clean(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
-            %
+            
             % May not work
             noise_bounds0_R = [find(noise_bounds_R~=max(noise_bounds_R),1,'first') find(noise_bounds_R==min(noise_bounds_R),1,'first') ]; %First row with noise, first column with noise
             %
@@ -183,6 +183,16 @@ for nn = 3:NN%:-1:1%:NN
             rightnoise = imsubtract(vidframeb_clean2,vidframeb_clean);
             vidframeb_clean = logical((vidframeb_clean-rightnoise));
             
+            % Special processing to try to better capture water, which has weird lighting effects
+            if strcmp(CaseCode, 'Da') % water experiments                
+%                 background_thresh_y = mean(vidframe0,2); % find background lighting as a function of y
+                vidframeb_clean(vidframe>vidframe0*1.3) = 0; % Any pixel that is much brighter than the original background is assumed to be water (reflecting/transmitting light)
+                vidframeb_clean(vidframe<vidframe0/1.3) = 0; % Any pixel that is much darker than the original background is assumed to be water (handles curvature at edges of structures)
+                vidframeb_clean = ~imfill(~vidframeb_clean,'holes');
+                vidframeb_clean = imfill(vidframeb_clean,'holes'); % Remove bright droplets that were filled in by the above process
+            end
+            
+            
             
             % Determine the y-location of top and bottom of fountain
             y_interface(ii) = max(max(vidframe_ind_y(vidframeb_clean == 1)));
@@ -201,7 +211,7 @@ for nn = 3:NN%:-1:1%:NN
             fountain_height = fountain_height_pix(ii)*m_per_pixel;
             
             % Plots fountain in real time
-            if false %|| ii > 133
+            if true %|| ii > 133
                 figure(1)
                 try % Commented commands should increase performance, but some internal bug is breaking things after a set number of frames;
                     if exist('hh','var')
