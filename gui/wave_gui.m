@@ -408,6 +408,10 @@ function pushbutton9_Callback(hObject, eventdata, handles)
 [file, path] = uigetfile({'*.csv';'*.*'},'File Selector');
 % edit1_Callback(hObject, eventdata, handles)
 handles.edit1.String=sprintf('%s/%s',path,file);
+<<<<<<< HEAD
+=======
+    pushbutton1_Callback(hObject, eventdata, handles)
+>>>>>>> cdec516764cbd7c0427b6639be1d449c84f24ccf
 
 
 % --- Executes during object creation, after setting all properties.
@@ -475,12 +479,21 @@ switch (get(eventdata.NewValue,'Tag'))
     case 'radiobutton4'
         if isfield(handles.axes1.UserData,'mytext'); delete(handles.axes1.UserData.mytext); end % Clear out unnecessary text
         axes(handles.axes1);
+<<<<<<< HEAD
         handles.axes1.UserData.MainPlot = plot(wavedata.FrequencySpectrum,abs(wavedata.PressureFFT));
 %         handles.axes1.UserData.MainPlot.XData = wavedata.FrequencySpectrum;
 %         handles.axes1.UserData.MainPlot.YData = wavedata.PressureFFT;
         handles.axes1.XLabel = xlabel('Frequency (Hz)');
         handles.axes1.YLabel =ylabel('FFT(Pressure) (Pa)');
         handles.axes1.XLim = [min(wavedata.FrequencySpectrum), max(wavedata.FrequencySpectrum)];
+=======
+        handles.axes1.UserData.MainPlot = plot(wavedata.FrequencySpectrum/1e6,abs(wavedata.PressureFFT));
+%         handles.axes1.UserData.MainPlot.XData = wavedata.FrequencySpectrum;
+%         handles.axes1.UserData.MainPlot.YData = wavedata.PressureFFT;
+        handles.axes1.XLabel = xlabel('Frequency (MHz)');
+        handles.axes1.YLabel =ylabel('FFT(Pressure) (Pa)');
+        handles.axes1.XLim = [min(wavedata.FrequencySpectrum), max(wavedata.FrequencySpectrum)]/1e6;
+>>>>>>> cdec516764cbd7c0427b6639be1d449c84f24ccf
         if wavedata.UnderSampled
            handles.axes1.UserData.mytext = text(0.05,0.95,'Warning: Undersampled Signal','Units','Normalized','Color','red','FontWeight','bold');
         end
