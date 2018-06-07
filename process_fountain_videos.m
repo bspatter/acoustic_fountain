@@ -35,8 +35,8 @@ strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
 % 2018-04-16 : Fountain images taken on 2018-04-05
 % based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
 
-CaseCode = 'Db';
-date_of_experiment='20180424';
+CaseCode = 'Da';
+date_of_experiment='20180521';
 basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
 
 fdir=sprintf('%s%s_%s/',basedir,CaseCode,date_of_experiment);
@@ -59,16 +59,16 @@ if max_analysis_flag
     load(sprintf('%s/fountain_data_%s_%s.mat',fdir,CaseCode,date_of_experiment),'fountain_data')
     
 end
-    
+
 
 % Loop over videos
-for nn = 31%:NN%:-1:1%:NN
+for nn = 3:NN%:-1:1%:NN
     
     try
         fname = fnames(nn,:); %Specific video file name
         fpath = [fdir,fname]; % Path to video file
         [~,basefname,~] = fileparts(fpath); %Specific video file name w/o extension
-               
+        
         if contains(fname,'Ruler'); continue; end
         fprintf('\nnn = %g/%g,      Processing %s\n',nn,NN,fname)
         
@@ -119,7 +119,7 @@ for nn = 31%:NN%:-1:1%:NN
         end
         
         % Initialize variables
-        [fountain_height_pix,frame_number,y_interface,y_fountain]=deal(zeros(50e3,1));
+        [fountain_height_pix,frame_number,y_interface,y_fountain,swell_width_]=deal(zeros(50e3,1));
         vidframezeros = zeros(size(vidframe0));
         ii = 0;
         
@@ -198,9 +198,10 @@ for nn = 31%:NN%:-1:1%:NN
             
             frame_number(ii) = ii;
             fountain_height_pix(ii) = y_interface(ii) - y_fountain(ii);
+            fountain_height = fountain_height_pix(ii)*m_per_pixel;
             
             % Plots fountain in real time
-            if true %|| ii > 133
+            if false %|| ii > 133
                 figure(1)
                 try % Commented commands should increase performance, but some internal bug is breaking things after a set number of frames;
                     if exist('hh','var')
@@ -211,16 +212,16 @@ for nn = 31%:NN%:-1:1%:NN
                     hold on
                     if exist('p1','var')
                         p1.YData = y_interface(ii)*[1,1];
-                        p2.YData = y_fountain(ii)*[1,1]; 
-                    else                        
+                        p2.YData = y_fountain(ii)*[1,1];
+                    else
                         p1 = plot([0,size(vidframe_ind_x,2)], y_interface(ii)*[1,1],'r','linewidth',2);
                         p2 = plot([0,size(vidframe_ind_x,2)], y_fountain(ii)*[1,1],'r','linewidth',2);
                     end
                     
-                    if ~exist('p_scale','var')                        
+                    if ~exist('p_scale','var')
                         pix_per_mm = 0.001 / m_per_pixel;
                         xscalebar = size(vidframeb_clean,2)*0.9+[0,pix_per_mm];
-                        yscalebar = size(vidframeb_clean,1)*0.05*[1,1];                        
+                        yscalebar = size(vidframeb_clean,1)*0.05*[1,1];
                         p_scale=plot(xscalebar,yscalebar,'k');
                         tt2 = text(0.45,0.97,'1 mm','units','normalized');
                         
@@ -256,27 +257,27 @@ for nn = 31%:NN%:-1:1%:NN
                     
                     % Don't run for longer than necessary (not yet calibrated)
                     if ii>900
-                        break; 
+                        break;
                     end
                 catch myerror
                     continue
                 end
             end
-%             fprintf('%d, ',ii); if mod(ii,20)==0; fprintf('\n');; end
+            %             fprintf('%d, ',ii); if mod(ii,20)==0; fprintf('\n');; end
             
             % Analyze the fountain at its peak
-            if max_analysis_flag %&& false
-%                 disp(fountain_height_pix(ii)/pix_per_mm*1e-3 / max(fountain_data(nn).fountain_height))
+            if max_analysis_flag && false
+                %                 disp(fountain_height_pix(ii)/pix_per_mm*1e-3 / max(fountain_data(nn).fountain_height))
                 % THE 15e-3 MAY NEED TO BE CALIBRATED FOR EACH EXPERIMENTAL SET
-                if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7)
-                    fprintf('Fountain Height: %f mm\n',fountain_height_pix(ii)/pix_per_mm)
+                if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) || true
+%                     fprintf('Fountain Height: %f mm\n',fountain_height_pix(ii)/pix_per_mm)
                     
                     fountain_height_max = fountain_height_pix(ii)/pix_per_mm*1e3;
                     
                     % surface profile
                     [~,surface_profile]=max(~vidframeb_clean);
                     surface_profile = abs(surface_profile-max(surface_profile));
-
+                    
                     
                     
                     
@@ -285,41 +286,55 @@ for nn = 31%:NN%:-1:1%:NN
                     [~,fountain_max_x_ind] = max(fountain_metric_x);
                     
                     % Find the Fountain's swell width at hmax
-%                     Lmin = find(fountain_metric_x(1:fountain_max_x_ind)==min(fountain_metric_x(1:fountain_max_x_ind)),1,'last');
-%                     [~,Rmin] = min(fountain_metric_x(fountain_max_x_ind:end)); Rmin = Rmin + fountain_max_x_ind;
-%                     fountain_threshold_height_pix = max([0.02*max(fountain_metric_x(1:fountain_max_x_ind)),0.1/pix_per_mm*1e3]);
-
+                    %                     Lmin = find(fountain_metric_x(1:fountain_max_x_ind)==min(fountain_metric_x(1:fountain_max_x_ind)),1,'last');
+                    %                     [~,Rmin] = min(fountain_metric_x(fountain_max_x_ind:end)); Rmin = Rmin + fountain_max_x_ind;
+                    %                     fountain_threshold_height_pix = max([0.02*max(fountain_metric_x(1:fountain_max_x_ind)),0.1/pix_per_mm*1e3]);
+                    
                     % Fountain threshold based on fountain metric < 5% of max (on L and R sides)
                     fountain_threshold_L1 = 0.02*(max(fountain_metric_x(1:fountain_max_x_ind))-min(fountain_metric_x(1:fountain_max_x_ind))) > (fountain_metric_x(1:fountain_max_x_ind)-min(fountain_metric_x(1:fountain_max_x_ind)));
                     fountain_threshold_R1 = 0.02*(max(fountain_metric_x(fountain_max_x_ind:end))-min(fountain_metric_x(fountain_max_x_ind:end))) > (fountain_metric_x(fountain_max_x_ind:end)-min(fountain_metric_x(fountain_max_x_ind:end)));
                     
                     % Fountain threshold based on zero slope (on L and R sides)
-%                     fountain_threshold_L2 = [false; (diff(smooth(surface_profile(1:fountain_max_x_ind))) == 0)];
-%                     fountain_threshold_R2 = [false; (diff(smooth(surface_profile(fountain_max_x_ind:end))) == 0)];
+                    %                     fountain_threshold_L2 = [false; (diff(smooth(surface_profile(1:fountain_max_x_ind))) == 0)];
+                    %                     fountain_threshold_R2 = [false; (diff(smooth(surface_profile(fountain_max_x_ind:end))) == 0)];
                     fountain_threshold_L2 = false(size(fountain_threshold_L1));
                     fountain_threshold_R2 = false(size(fountain_threshold_R1));
                     
                     
                     Lmin = find(  fountain_threshold_L1 | fountain_threshold_L2,1,'last');
                     Rmin = find(  fountain_threshold_R1 | fountain_threshold_R2,1,'first'); Rmin = Rmin + fountain_max_x_ind;
-
-                    hold on;
                     
+                    fountain_min_height_threshold = 2e-4;
+                    if ~isempty(Lmin) && ~isempty(Rmin) && (fountain_height > fountain_min_height_threshold)
+                        if exist('psLR','var') %&& false
+                            psLR(1).XData = [Lmin,Lmin];
+                            psLR(2).XData = [Rmin,Rmin];
+                        else 
+                            hold on;
+                            % half width -> find half the maximum height, look left and right of fountain_max_x_ind at that height, until you reach air, get that width
+                            psLR(1) = plot([Lmin,Lmin],myax.YLim,'r--');
+                            psLR(2) = plot([Rmin,Rmin],myax.YLim,'r--'); hold off
+                        end
                     
-                    % half width -> find half the maximum height, look left and right of fountain_max_x_ind at that height, until you reach air, get that width
+                    if fountain_height > fountain_min_height_threshold % doesn't count as a fountain until its at least this tall
+                        swell_width = (Rmin-Lmin)*m_per_pixel;
+                    else
+                        swell_width = 0;
+                    end
+                        swell_width_(ii) = swell_width;
+%                         fprintf('Swell Width: %f\n',swell_width);
+                    end
                     
-                    
-                    psLR(1) = plot([Lmin,Lmin],myax.YLim,'r--');
-                    psLR(2) = plot([Rmin,Rmin],myax.YLim,'r--'); hold off
-                    swell_width = (Rmin-Lmin)/pix_per_mm*1e-3;
-                    fprintf('Swell Width: %f\n',swell_width);                    
-                    delete(psLR);
-                    break
+                    %delete(psLR);
+                    % Break at max fountain height
+                    if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7)
+                        break
+                    end
                 end
                 
                 
             end
-
+            
         end
         
         % remove trailing zeros and data from far before the fountain
@@ -333,6 +348,7 @@ for nn = 31%:NN%:-1:1%:NN
         frame_number = frame_number(f0:flast);
         y_interface = y_interface(f0:flast);
         y_fountain = y_fountain(f0:flast);
+        swell_width_ = swell_width_(f0:flast);
         time = frame_number/fps;
         
         
@@ -356,6 +372,7 @@ for nn = 31%:NN%:-1:1%:NN
         fountain_data(nn).time = time - time(1);
         fountain_data(nn).frame_number = frame_number;
         fountain_data(nn).camera_data = camera_data;
+        fountain_data(nn).swell_width = swell_width_;
         
         % Save the frames to analyze next time (used for faster analysis, only look at frames w/ fountain)
         if f0~=1
