@@ -1,6 +1,9 @@
 function varargout = wave_gui(varargin)
+<<<<<<< HEAD
 %WAVE_GUI  Graphical user interface for analyzing measured ultrasound data
 % 
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 % WAVE_GUI MATLAB code for wave_gui.fig
 %      WAVE_GUI, by itself, creates a new WAVE_GUI or raises the existing
 %      singleton*.
@@ -24,7 +27,11 @@ function varargout = wave_gui(varargin)
 
 % Edit the above text to modify the response to help wave_gui
 
+<<<<<<< HEAD
 % Last Modified by GUIDE v2.5 07-Jun-2018 13:55:44
+=======
+% Last Modified by GUIDE v2.5 06-Jun-2018 15:08:27
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -61,6 +68,7 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 
+<<<<<<< HEAD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This stuff runs at the very beginning.
 handles.axes1.Box = 'on';
@@ -68,6 +76,8 @@ handles.axes1.Box = 'on';
 handles.uitable2.ColumnWidth={125};
 handles.uitable2.Position(3) = handles.uitable2.Extent(3);
 handles.uitable2.Position(4) = handles.uitable2.Extent(4);
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 % --- Outputs from this function are returned to the command line.
 function varargout = wave_gui_OutputFcn(hObject, eventdata, handles) 
@@ -81,7 +91,10 @@ varargout{1} = handles.output;
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 function edit1_Callback(hObject, eventdata, handles)
 % hObject    handle to edit1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -114,10 +127,17 @@ function [wave_data]=pushbutton1_Callback(hObject, eventdata, handles)
 % clean-up anything we might not want
 clearstuff(handles)
 
+<<<<<<< HEAD
 if strcmpi(handles.edit1.String,'wave csv file')
     [file, path] = uigetfile({'*.csv';'*.*'},'File Selector');
     % edit1_Callback(hObject, eventdata, handles)
     handles.edit1.String=sprintf('%s%s',path,file);
+=======
+if strcmp(lower(handles.edit1.String),'wave csv file')
+    [file, path] = uigetfile({'*.csv';'*.*'},'File Selector');
+    % edit1_Callback(hObject, eventdata, handles)
+    handles.edit1.String=sprintf('%s/%s',path,file);
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 end
 
 % [fname, path] = uigetfile({'*.csv';'*.*'},'File Selector');
@@ -158,12 +178,15 @@ end
 
 % time
 time(isinf(ch1))=[]; %remove unreal values
+<<<<<<< HEAD
 
 % remove double time entries (only effects signals with sampling resolutions that exceed what is recorded for the bit depth, so it should be okay)
 [time,ia,~] = unique(time);
 ch1 = ch1(ia);
 
 % 
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 time_micro = time*1e6; % Time in microseconds
 
 % voltage
@@ -183,7 +206,11 @@ Pressure = Pressure_MPa*1e6;
 axes(handles.axes1)
 handles.axes1.UserData.MainPlot = plot(time_micro,Pressure_MPa);
 xlim([min(time_micro), max(time_micro)])
+<<<<<<< HEAD
 xlabel('Time (\mus)')
+=======
+xlabel('time (\mus)')
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 ylabel('Pressure (MPa)')
 
 rho = 1e3;
@@ -195,6 +222,7 @@ Intensity = Pressure.^2/(rho*c);
 PII = trapz(time, Instant_Intensity)/range(time); %Pulse intensity integral based on Kinsler Eq. (5.9.1)
 PII_cm = trapz(time, Instant_Intensity)/range(time)/1e4; %Pulse intensity integral based on Kinsler Eq. (5.9.1) per centimeter
 
+<<<<<<< HEAD
 % Match Doug's calculations
 DH = diff(time).*(Instant_Intensity_Wcm2(1:(end-1)) + Instant_Intensity_Wcm2(2:end))/2; %Doug's column H
 DI = cumsum(DH); %Doug's column I
@@ -205,6 +233,8 @@ lt10percent = sum(DK<0.1);
 lt90percent = sum(DK<0.9);
         
 
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 date_rec = '02-May-2018';
 
@@ -236,9 +266,12 @@ PressureFFT= bfft(y);
 [~,dominant_frequency_index]=max(abs(PressureFFT));
 dominant_frequency = FrequencySpectrum(dominant_frequency_index);
 
+<<<<<<< HEAD
 pulse_duration = range(time);
 pulse_duration_micro = pulse_duration*1e6;
 
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 % Is the signal undersampled?
 undersampled_flag = true;
 MI = 0;
@@ -250,6 +283,7 @@ end
 [Pressure_derated, time_derated] = derate_wave(time,Pressure,str2double(handles.edit7.String), str2double(handles.edit8.String));
 Intensity_derated = Pressure_derated.^2/(rho*c);
 
+<<<<<<< HEAD
 % Update the pulse bounds & call analyze pulse
 handles.edit3.String = time(end)*1e6;
 handles.edit4.String = time(1)*1e6;
@@ -263,11 +297,24 @@ wavedata = struct('time',time,'time_micro',time*1e6,'voltage',ch1,'voltage_mean'
     'Pressure_derated',Pressure_derated,'time_derated',time_derated,'Intensity_derated',Intensity_derated,...
     'rho',rho,'c',c,'lt10percent',lt10percent,'lt90percent',lt90percent,...
     'MI',MI,'tekfile',filename...    
+=======
+wavedata = struct('time',time,'time_micro',time*1e6,'voltage',ch1,'voltage_mean',voltage_mean,'calibration_VoltMPa',calibration,...
+    'Pressure',Pressure,'Pressure_MPa',Pressure_MPa,'PressurePeakPositive',max(Pressure),'PressurePeakNegative',min(Pressure),'PressureCenter',Pabs_mid_MPa,...
+    'Intensity',Instant_Intensity,'Intensity_Wcm2',Instant_Intensity_Wcm2,'IntensityPeak_Wcm2',max(Instant_Intensity_Wcm2), 'IntensityPulseAverage_Wcm2',0,...
+    'WaveDuration',range(time),'WaveDuration_micro',range(time_micro),'PulseDuration',0,'PulseDuration_micro',0,...
+    'PressureFFT',PressureFFT(:),'FrequencySpectrum',FrequencySpectrum(:),'UnderSampled',undersampled_flag,...
+    'Pressure_derated',Pressure_derated,'time_derated',time_derated,'Intensity_derated',Intensity_derated,...
+    'rho',rho,'c',c,...
+    'MI',MI,'tekfile',filename...
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
     );
 
 handles.pushbutton1.UserData = wavedata;
 
+<<<<<<< HEAD
 pushbutton5_Callback(hObject, eventdata, handles)
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 function edit2_Callback(hObject, eventdata, handles)
 % hObject    handle to edit2 (see GCBO)
@@ -345,8 +392,13 @@ function pushbutton5_Callback(hObject, eventdata, handles)
 wavedata = handles.pushbutton1.UserData;
 
 pulse_interval = [str2double(handles.edit4.String), str2double(handles.edit3.String)]/1e6;
+<<<<<<< HEAD
 pulse_left_boundary_index = find(wavedata.time <= pulse_interval(1),1,'last');
 pulse_right_boundary_index = find(wavedata.time >= pulse_interval(2),1,'first');
+=======
+pulse_left_boundary_index = find(wavedata.time < pulse_interval(1),1,'last');
+pulse_right_boundary_index = find(wavedata.time > pulse_interval(2),1,'first');
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 pulse_range_indeces = [pulse_left_boundary_index, pulse_right_boundary_index];
         
@@ -368,6 +420,7 @@ pulse_average_intensity = trapz(pulse_time,pulse_intensity)/range(pulse_time);
 pulse_average_intensity_cm = pulse_average_intensity / 1e4;
 
 % FFT stuff to get frequency for the pulse alone
+<<<<<<< HEAD
 if true
     % FFT stuff
     pulse_time_adjusted = pulse_time-pulse_time(1); % start time from 0;
@@ -412,15 +465,41 @@ else
     fpulse = 0;
 end
 wavedata.MI = MI;
+=======
+YP = fft(pulse_pressure);
+L=length(pulse_pressure);
+YP2 = abs(YP/L);
+YP1 = YP2(1:(floor(L/2)+1));
+YP1(2:end-1) = 2*YP1(2:end-1);
+
+sampling_frequency = 1/mean(diff(wavedata.time));
+frequency_spectrum = sampling_frequency*(0:(L/2))/L;
+pulse_frequency = frequency_spectrum(YP1 == max(YP1));
+if ~(max(frequency_spectrum)==pulse_frequency)
+    MI = abs(min(pulse_pressure_MPa))/sqrt(pulse_frequency/1e6);
+    fpulse = pulse_frequency;
+else
+    MI = 0;
+    fpulse = 0;
+end
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 % Assign relevant data to table in gui
 pulse_table_data = [pulse_duration_micro, round(max(pulse_pressure_MPa),2), round(min(pulse_pressure_MPa),2), round((max(pulse_pressure_MPa) - min(pulse_pressure_MPa))/2,2), round(pulse_average_intensity_cm,1),round(fpulse/1e6,2),round(MI,2)]';
 handles.uitable2.Data = pulse_table_data;
+<<<<<<< HEAD
 
 wavedata.PulsePressure_MPa = pulse_pressure_MPa;
 wavedata.IntensityPulseAverage_Wcm2 = pulse_average_intensity_cm;
 
 handles.pushbutton1.UserData = wavedata;
+=======
+% Set width and height
+handles.uitable2.ColumnWidth={125};
+handles.uitable2.Position(3) = handles.uitable2.Extent(3);
+handles.uitable2.Position(4) = handles.uitable2.Extent(4);
+
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 % --- Executes on button press in pushbutton6.
 function pushbutton6_Callback(hObject, eventdata, handles)
@@ -434,11 +513,15 @@ handles.edit4.String = xstr;
 axes(handles.axes1); hold on;
 if isfield(handles.axes1.UserData,'LeftBoundaryPlot'); delete(handles.axes1.UserData.LeftBoundaryPlot); end % remove old line
 handles.axes1.UserData.LeftBoundaryPlot = plot(x*[1,1], handles.axes1.YLim,'r--'); hold off;
+<<<<<<< HEAD
 
 wavedata = handles.pushbutton1.UserData;
 wavedata.PulseDuration = str2double(handles.edit3.String) - str2double(handles.edit4.String);
 wavedata.PulseDuration_micro = wavedata.PulseDuration*1e6;
 handles.pushbutton1.UserData = wavedata;
+=======
+a=1+1;
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 
 % --- Executes on button press in pushbutton8.
@@ -447,12 +530,18 @@ function pushbutton8_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 % handles    structure with handles and user data (see GUIDATA)
 [x,~]=ginput(1);
 x = x(end);
 xstr=sprintf('%.3f',x);
 handles.edit3.String = xstr;
 axes(handles.axes1); hold on;
+<<<<<<< HEAD
 if isfield(handles.axes1.UserData,'RightBoundaryPlot'); delete(handles.axes1.UserData.RightBoundaryPlot); end % remove old line
 handles.axes1.UserData.RightBoundaryPlot = plot(x*[1,1], handles.axes1.YLim,'r--'); hold off
 
@@ -460,6 +549,9 @@ wavedata = handles.pushbutton1.UserData;
 wavedata.PulseDuration = str2double(handles.edit3.String) - str2double(handles.edit4.String);
 wavedata.PulseDuration_micro = wavedata.PulseDuration*1e6;
 handles.pushbutton1.UserData = wavedata;
+=======
+plot(x*[1,1], handles.axes1.YLim,'r--'); hold off
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 
 % --- Executes on button press in togglebutton1.
@@ -479,7 +571,14 @@ function pushbutton9_Callback(hObject, eventdata, handles)
 [file, path] = uigetfile({'*.csv';'*.*'},'File Selector');
 % edit1_Callback(hObject, eventdata, handles)
 handles.edit1.String=sprintf('%s/%s',path,file);
+<<<<<<< HEAD
     pushbutton1_Callback(hObject, eventdata, handles)
+=======
+<<<<<<< HEAD
+=======
+    pushbutton1_Callback(hObject, eventdata, handles)
+>>>>>>> cdec516764cbd7c0427b6639be1d449c84f24ccf
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 
 % --- Executes during object creation, after setting all properties.
@@ -547,12 +646,30 @@ switch (get(eventdata.NewValue,'Tag'))
     case 'radiobutton4'
         if isfield(handles.axes1.UserData,'mytext'); delete(handles.axes1.UserData.mytext); end % Clear out unnecessary text
         axes(handles.axes1);
+<<<<<<< HEAD
         handles.axes1.UserData.MainPlot = plot(wavedata.FrequencySpectrum/1e6,abs(wavedata.PressureFFT));
 %         handles.axes1.UserData.MainPlot.XData = wavedata.FrequencySpectrum/1e6;
 %         handles.axes1.UserData.MainPlot.YData = wavedata.PressureFFT;
         handles.axes1.XLabel = xlabel('Frequency (MHz)');
         handles.axes1.YLabel = ylabel('FFT(Pressure) (Pa)');
         handles.axes1.XLim = [min(wavedata.FrequencySpectrum), max(wavedata.FrequencySpectrum)]/1e6;
+=======
+<<<<<<< HEAD
+        handles.axes1.UserData.MainPlot = plot(wavedata.FrequencySpectrum,abs(wavedata.PressureFFT));
+%         handles.axes1.UserData.MainPlot.XData = wavedata.FrequencySpectrum;
+%         handles.axes1.UserData.MainPlot.YData = wavedata.PressureFFT;
+        handles.axes1.XLabel = xlabel('Frequency (Hz)');
+        handles.axes1.YLabel =ylabel('FFT(Pressure) (Pa)');
+        handles.axes1.XLim = [min(wavedata.FrequencySpectrum), max(wavedata.FrequencySpectrum)];
+=======
+        handles.axes1.UserData.MainPlot = plot(wavedata.FrequencySpectrum/1e6,abs(wavedata.PressureFFT));
+%         handles.axes1.UserData.MainPlot.XData = wavedata.FrequencySpectrum;
+%         handles.axes1.UserData.MainPlot.YData = wavedata.PressureFFT;
+        handles.axes1.XLabel = xlabel('Frequency (MHz)');
+        handles.axes1.YLabel =ylabel('FFT(Pressure) (Pa)');
+        handles.axes1.XLim = [min(wavedata.FrequencySpectrum), max(wavedata.FrequencySpectrum)]/1e6;
+>>>>>>> cdec516764cbd7c0427b6639be1d449c84f24ccf
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         if wavedata.UnderSampled
            handles.axes1.UserData.mytext = text(0.05,0.95,'Warning: Undersampled Signal','Units','Normalized','Color','red','FontWeight','bold');
         end
@@ -652,6 +769,7 @@ function edit8_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+<<<<<<< HEAD
 
 
 % --- Executes on button press in pushbutton10.
@@ -783,3 +901,5 @@ function edit9_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415

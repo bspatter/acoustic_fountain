@@ -37,12 +37,19 @@ for n = [3, 8:14, 20:24] %:40%38:45%NN-1;%[6,20:24]%0:24
         header = '';
         
         google_green = [60, 186, 84]/255;
+<<<<<<< HEAD
         ln = 0;
         while ischar(tline)
             %     sprintf('%s',tline);
             
             ln = ln+1;
             disp(ln)
+=======
+        
+        while ischar(tline)
+            %     sprintf('%s',tline);
+            
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
             
             tline = fgetl(fid);
             

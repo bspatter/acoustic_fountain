@@ -27,6 +27,7 @@ function fountain_data = process_fountain_videos()
 
 clc; clear; %close all;
 
+<<<<<<< HEAD
 options=struct();
 options.PlotFountain = true;
 options.WriteFountainVideo = false && options.PlotFountain; %dependent on options above
@@ -34,6 +35,8 @@ options.max_analysis_flag = true; %analyze fountain at max height (get width)
 options.saveFountainData = false;
 
 paperfigdir = 'E:/brandon/Dropbox/Research/Papers,etc/papers/2018_fountain/figs/';
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 
 tic
 
@@ -42,8 +45,13 @@ strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
 % 2018-04-16 : Fountain images taken on 2018-04-05
 % based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
 
+<<<<<<< HEAD
 CaseCode = 'Db';%'Da';
 date_of_experiment='20180424';%'20180417';%'20180424';
+=======
+CaseCode = 'Da';
+date_of_experiment='20180521';
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
 
 fdir=sprintf('%s%s_%s/',basedir,CaseCode,date_of_experiment);
@@ -51,7 +59,11 @@ fnames = ls([fdir '*.avi']); %All video file names in the relevant directory
 fnames = fnames(~arrayfun(@(x) contains(x,'Ruler'), string(fnames)),:); % Remove the calibration ruler files
 NN = length(fnames);
 fountain_data=struct('filename','','filepath','','CaseCode',CaseCode,'CaseNumber','','date_of_experiment','','time_of_experiment','',...
+<<<<<<< HEAD
     'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'fountain_heigh_max',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
+=======
+    'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 fountain_data = repmat(fountain_data,[NN,1]);
 
 %     if strcmp(CaseCode,'Da'); water_flag = true;else water_flag = false; end
@@ -60,20 +72,31 @@ fountain_data = repmat(fountain_data,[NN,1]);
 load(sprintf('%sfountain_start_end.mat',basedir),'fountain_start_end');
 
 
+<<<<<<< HEAD
 
 %used for detecting stopping fountain at max
 if options.max_analysis_flag 
+=======
+max_analysis_flag = true
+%used for detecting stopping fountain at max
+if max_analysis_flag
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
     load(sprintf('%s/fountain_data_%s_%s.mat',fdir,CaseCode,date_of_experiment),'fountain_data')
     
 end
 
 
+<<<<<<< HEAD
 
 
 
 % Loop over videos
 % tallest_fountain_per_set_Db20180424 = [2,10,14,19,25,31,37];
 for nn = 1:NN%:-1:1%:NN
+=======
+% Loop over videos
+for nn = 3:NN%:-1:1%:NN
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
     
     try
         fname = fnames(nn,:); %Specific video file name
@@ -83,11 +106,14 @@ for nn = 1:NN%:-1:1%:NN
         if contains(fname,'Ruler'); continue; end
         fprintf('\nnn = %g/%g,      Processing %s\n',nn,NN,fname)
         
+<<<<<<< HEAD
         %What case and date are this.
         CaseLabel = strsplit(basefname,'_');
         baseCaseLabel = [CaseLabel{1} ' ' CaseLabel{2}];
 
         
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         
         % read the camera data and get the frames per second
         camera_data = readcih(sprintf('%s%s',fdir,strrep(fname,'.avi','.cih')));
@@ -97,10 +123,14 @@ for nn = 1:NN%:-1:1%:NN
         m_per_pixel = getscale(CaseCode,date_of_experiment);
         
         
+<<<<<<< HEAD
 
         
         %% Process the intial video
         %create video object for reading
+=======
+        %create video object
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         v =VideoReader(fpath); %#ok<TNMLP>
         
         if isfield(fountain_start_end,basefname)
@@ -137,6 +167,7 @@ for nn = 1:NN%:-1:1%:NN
             vidframeb = imbinarize(vidframe,mid_graythreshold);
         end
         
+<<<<<<< HEAD
 
 
 
@@ -151,12 +182,17 @@ for nn = 1:NN%:-1:1%:NN
             open(fountain_video)
         end
         
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         % Initialize variables
         [fountain_height_pix,frame_number,y_interface,y_fountain,swell_width_]=deal(zeros(50e3,1));
         vidframezeros = zeros(size(vidframe0));
         ii = 0;
         
+<<<<<<< HEAD
         % main loop over frames                
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         while hasFrame(v)
             ii = ii+1; % counter
             
@@ -183,12 +219,26 @@ for nn = 1:NN%:-1:1%:NN
             end
             
             
+<<<<<<< HEAD
             % find and clean weird left edge noise
             edge_x_threshold = floor(size(vidframeb_clean,2)/10); %pixles left of this not counted as part of fountain
             
             %CHANGED ABOVE TO USE vidframeb_clean THIS SEEMS TO WORK
             noise_bounds_R = sum(vidframeb_clean(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
             
+=======
+            
+            % SOMETHING LIKE THIS SHOWS PROMISE FOR FILLING IN THE LIGHT SPOTS ON FOUNTAIN
+            %              figure; imshow(~imfill(~(vf2b-(imsubtract(vidframe,vidframe0)>10)),'holes'))
+            
+            
+            % find and clean weird left edge noise
+            edge_x_threshold = floor(size(vidframeb_clean,2)/10); %pixles left of this not counted as part of fountain
+            %             noise_bounds = sum(vidframeb(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
+            %CHANGED ABOVE TO USE vidframeb_clean THIS SEEMS TO WORK
+            noise_bounds_R = sum(vidframeb_clean(:,1:edge_x_threshold),2);% Look at the left 10% of the frame and sum
+            %
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
             % May not work
             noise_bounds0_R = [find(noise_bounds_R~=max(noise_bounds_R),1,'first') find(noise_bounds_R==min(noise_bounds_R),1,'first') ]; %First row with noise, first column with noise
             %
@@ -212,6 +262,7 @@ for nn = 1:NN%:-1:1%:NN
             rightnoise = imsubtract(vidframeb_clean2,vidframeb_clean);
             vidframeb_clean = logical((vidframeb_clean-rightnoise));
             
+<<<<<<< HEAD
             % Special processing to try to better capture water, which has weird lighting effects
             if strcmp(CaseCode, 'Da') % water experiments                
 %                 background_thresh_y = mean(vidframe0,2); % find background lighting as a function of y
@@ -299,6 +350,8 @@ for nn = 1:NN%:-1:1%:NN
             end
             
             
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
             
             % Determine the y-location of top and bottom of fountain
             y_interface(ii) = max(max(vidframe_ind_y(vidframeb_clean == 1)));
@@ -316,11 +369,17 @@ for nn = 1:NN%:-1:1%:NN
             fountain_height_pix(ii) = y_interface(ii) - y_fountain(ii);
             fountain_height = fountain_height_pix(ii)*m_per_pixel;
             
+<<<<<<< HEAD
 
             % Plots fountain in real time
             if options.PlotFountain %|| ii > 133
                 
                 gg = figure(1);
+=======
+            % Plots fountain in real time
+            if false %|| ii > 133
+                figure(1)
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                 try % Commented commands should increase performance, but some internal bug is breaking things after a set number of frames;
                     if exist('hh','var')
                         hh.CData = [vidframeb_clean*255, vidframe];
@@ -328,6 +387,7 @@ for nn = 1:NN%:-1:1%:NN
                         hh = imshowpair(vidframeb_clean,vidframe,'montage');
                     end
                     hold on
+<<<<<<< HEAD
                                         
                     % plot the red lines to show height of interface & the contour of the surface
                     if exist('p1','var')
@@ -337,6 +397,12 @@ for nn = 1:NN%:-1:1%:NN
                         p2.YData = y_fountain(ii)*[1,1];
                     else
                         p3 = plot(contour_data(end).x,contour_data(end).y,'b');
+=======
+                    if exist('p1','var')
+                        p1.YData = y_interface(ii)*[1,1];
+                        p2.YData = y_fountain(ii)*[1,1];
+                    else
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                         p1 = plot([0,size(vidframe_ind_x,2)], y_interface(ii)*[1,1],'r','linewidth',2);
                         p2 = plot([0,size(vidframe_ind_x,2)], y_fountain(ii)*[1,1],'r','linewidth',2);
                     end
@@ -346,10 +412,19 @@ for nn = 1:NN%:-1:1%:NN
                         xscalebar = size(vidframeb_clean,2)*0.9+[0,pix_per_mm];
                         yscalebar = size(vidframeb_clean,1)*0.05*[1,1];
                         p_scale=plot(xscalebar,yscalebar,'k');
+<<<<<<< HEAD
                         tt2 = text(0.45,0.97,'1 mm','units','normalized','FontWeight','bold');
                         
 
                         tt3 = text(0.225,0.97,sprintf('%s',baseCaseLabel),'units','normalized','FontWeight','bold'); % Label the top
+=======
+                        tt2 = text(0.45,0.97,'1 mm','units','normalized');
+                        
+                        %What case and date are this.
+                        CaseLabel = strsplit(basefname,'_');
+                        baseCaseLabel = [CaseLabel{1} ' ' CaseLabel{2}];
+                        tt3 = text(0.225,0.97,sprintf('%s',baseCaseLabel),'units','normalized'); % Label the top
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                         
                         myax=gca;
                         myax.Box='off';
@@ -364,15 +439,22 @@ for nn = 1:NN%:-1:1%:NN
                         YTickLabels(ytick0_index:end) = 0:-1:-(length(YTickLabelOrder)-ytick0_index);
                         myax.YTickLabel=cellstr(num2str(YTickLabels));
                         ylabel('mm')
+<<<<<<< HEAD
                         myax.FontSize=14;
                     elseif ~strcmp(tt3.String,baseCaseLabel)
                         tt3.String = baseCaseLabel;
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                     end
                     
                     if exist('tt1','var')
                         tt1.String = sprintf('t=%f',frame_number(ii)/fps);
                     else
+<<<<<<< HEAD
                         tt1 = text(0.025,0.975,sprintf('t=%f',frame_number(ii)/fps),'units','normalized','FontWeight','bold');
+=======
+                        tt1 = text(0.025,0.975,sprintf('t=%f',frame_number(ii)/fps),'units','normalized');
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                     end
                     
                     hold off
@@ -384,19 +466,29 @@ for nn = 1:NN%:-1:1%:NN
                         break;
                     end
                 catch myerror
+<<<<<<< HEAD
                     fprintf('Broke at line %d; nn = %d, ii = %d, Case: %s\n',myerror.stack.line,nn,ii,fname)
                     disp( getReport( myerror, 'extended', 'hyperlinks', 'on' ) );
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                     continue
                 end
             end
             %             fprintf('%d, ',ii); if mod(ii,20)==0; fprintf('\n');; end
             
             % Analyze the fountain at its peak
+<<<<<<< HEAD
             swell_width = 0;% This is just to appease the structure at the end when this section is skipped
             if options.max_analysis_flag 
                 %                 disp(fountain_height_pix(ii)/pix_per_mm*1e-3 / max(fountain_data(nn).fountain_height))
                 % THE 15e-3 MAY NEED TO BE CALIBRATED FOR EACH EXPERIMENTAL SET
                 if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) %|| true
+=======
+            if max_analysis_flag && false
+                %                 disp(fountain_height_pix(ii)/pix_per_mm*1e-3 / max(fountain_data(nn).fountain_height))
+                % THE 15e-3 MAY NEED TO BE CALIBRATED FOR EACH EXPERIMENTAL SET
+                if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) || true
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
 %                     fprintf('Fountain Height: %f mm\n',fountain_height_pix(ii)/pix_per_mm)
                     
                     fountain_height_max = fountain_height_pix(ii)/pix_per_mm*1e3;
@@ -454,6 +546,7 @@ for nn = 1:NN%:-1:1%:NN
                     
                     %delete(psLR);
                     % Break at max fountain height
+<<<<<<< HEAD
                     if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) && false
                         break
                     end
@@ -475,11 +568,17 @@ for nn = 1:NN%:-1:1%:NN
                     
                     psLR
                     
+=======
+                    if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7)
+                        break
+                    end
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
                 end
                 
                 
             end
             
+<<<<<<< HEAD
             if options.WriteFountainVideo
                writeVideo(fountain_video,getframe(gg))
             end
@@ -490,6 +589,10 @@ for nn = 1:NN%:-1:1%:NN
         if options.WriteFountainVideo
             close(fountain_video)
         end
+=======
+        end
+        
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         % remove trailing zeros and data from far before the fountain
         flast = find(fountain_height_pix,1,'last');
         
@@ -517,7 +620,11 @@ for nn = 1:NN%:-1:1%:NN
         fountain_data(nn).fountain_height_pix = fountain_height_pix;
         fountain_data(nn).m_per_pix = getscale(fountain_data(nn).CaseCode,fountain_data(nn).date_of_experiment);
         fountain_data(nn).fountain_height = fountain_data(nn).fountain_height_pix * fountain_data(nn).m_per_pix;
+<<<<<<< HEAD
         fountain_data(nn).fountain_height_max = max(fountain_height);
+=======
+        fountain_data(nn).fountain_height_max = fountain_height_max;
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         fountain_data(nn).swell_width = swell_width;
         fountain_data(nn).y_interface = y_interface;
         fountain_data(nn).y_fountain = y_fountain;
@@ -526,8 +633,11 @@ for nn = 1:NN%:-1:1%:NN
         fountain_data(nn).frame_number = frame_number;
         fountain_data(nn).camera_data = camera_data;
         fountain_data(nn).swell_width = swell_width_;
+<<<<<<< HEAD
         fountain_data(nn).contour_x = contour_xmax;
         fountain_data(nn).contour_y = contour_ymax;
+=======
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         
         % Save the frames to analyze next time (used for faster analysis, only look at frames w/ fountain)
         if f0~=1
@@ -539,10 +649,14 @@ for nn = 1:NN%:-1:1%:NN
         toc
         
     catch myerror
+<<<<<<< HEAD
         fprintf('Broke at line %d; nn = %d, ii = %d, Case: %s\n',myerror.stack.line,nn,ii,fname)
         disp( getReport( myerror, 'extended', 'hyperlinks', 'on' ) );
         if options.WriteFountainVideo; close(fountain_video); end
 %         rethrow(myerror)
+=======
+        fprintf('Broke at nn = %d, ii = %d, Case: %s\n',nn,ii,fname)
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         toc
         continue
         rethrow(myerror)
@@ -564,7 +678,11 @@ try
         clf(4)
         axes;
         mycolors = get(gca,'ColorOrder');
+<<<<<<< HEAD
         jj0=1;
+=======
+        jj0=5;
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
         for jj = jj0:42
             pp(jj) = plot(fountain_data(jj).time(1:length(fountain_data(jj).fountain_height))*1e3,fountain_data(jj).fountain_height*1e3,'Color',mycolors(floor((jj-1)/6)+1,:));
             hold on
@@ -573,13 +691,21 @@ try
         ylabel('Fountain height (mm)')
         legend(pp(jj0:6:end),'-00 dB', '-02 dB', '-04 dB', '-06 dB', '-08 dB', '-10 dB', '-12 dB')
         spiffyp(hhh)
+<<<<<<< HEAD
         xlim([0,13.5])
+=======
+        xlim([0,35])
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
     end
 catch
 end
 
 % save the data (overwrites existing data, so false by default)
+<<<<<<< HEAD
 if options.saveFountainData
+=======
+if false
+>>>>>>> db6917b0c2c82bb70368f5903bf65bfb972ba415
     save(sprintf('%s/fountain_data_%s_%s.mat',fdir,CaseCode,fountain_data(nn).date_of_experiment),'fountain_data')
 end
 
