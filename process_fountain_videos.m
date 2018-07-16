@@ -27,6 +27,13 @@ function fountain_data = process_fountain_videos()
 
 clc; clear; %close all;
 
+options=struct();
+options.PlotFountain = true;
+options.WriteFountainVideo = false && options.PlotFountain; %dependent on options above
+options.max_analysis_flag = true; %analyze fountain at max height (get width)
+options.saveFountainData = false;
+
+paperfigdir = 'E:/brandon/Dropbox/Research/Papers,etc/papers/2018_fountain/figs/';
 
 tic
 
@@ -35,8 +42,8 @@ strip_extension = @(mystr) mystr(1:(find(mystr=='.',1,'last')-1));
 % 2018-04-16 : Fountain images taken on 2018-04-05
 % based on matlab tutorial for motion-based multiple object tracking for computer vision toolbox
 
-CaseCode = 'Da';
-date_of_experiment='20180521';
+CaseCode = 'Db';%'Da';
+date_of_experiment='20180424';%'20180417';%'20180424';
 basedir = 'E:/brandon/research/acoustic_fountain/acoustic_fountain_videos/';
 
 fdir=sprintf('%s%s_%s/',basedir,CaseCode,date_of_experiment);
@@ -44,7 +51,7 @@ fnames = ls([fdir '*.avi']); %All video file names in the relevant directory
 fnames = fnames(~arrayfun(@(x) contains(x,'Ruler'), string(fnames)),:); % Remove the calibration ruler files
 NN = length(fnames);
 fountain_data=struct('filename','','filepath','','CaseCode',CaseCode,'CaseNumber','','date_of_experiment','','time_of_experiment','',...
-    'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
+    'm_per_pix',0,'fountain_height_pix',[],'fountain_height',[],'fountain_heigh_max',[],'y_interface',[],'y_fountain',[],'time_raw',[],'time',[],'frame_number',[],'camera_data',struct([]));
 fountain_data = repmat(fountain_data,[NN,1]);
 
 %     if strcmp(CaseCode,'Da'); water_flag = true;else water_flag = false; end
@@ -53,15 +60,19 @@ fountain_data = repmat(fountain_data,[NN,1]);
 load(sprintf('%sfountain_start_end.mat',basedir),'fountain_start_end');
 
 
-max_analysis_flag = true
+
 %used for detecting stopping fountain at max
-if max_analysis_flag
+if options.max_analysis_flag 
     load(sprintf('%s/fountain_data_%s_%s.mat',fdir,CaseCode,date_of_experiment),'fountain_data')
     
 end
 
 
+
+
+
 % Loop over videos
+% tallest_fountain_per_set_Db20180424 = [2,10,14,19,25,31,37];
 for nn = 1:NN%:-1:1%:NN
     
     try
@@ -72,6 +83,11 @@ for nn = 1:NN%:-1:1%:NN
         if contains(fname,'Ruler'); continue; end
         fprintf('\nnn = %g/%g,      Processing %s\n',nn,NN,fname)
         
+        %What case and date are this.
+        CaseLabel = strsplit(basefname,'_');
+        baseCaseLabel = [CaseLabel{1} ' ' CaseLabel{2}];
+
+        
         
         % read the camera data and get the frames per second
         camera_data = readcih(sprintf('%s%s',fdir,strrep(fname,'.avi','.cih')));
@@ -81,7 +97,10 @@ for nn = 1:NN%:-1:1%:NN
         m_per_pixel = getscale(CaseCode,date_of_experiment);
         
         
-        %create video object
+
+        
+        %% Process the intial video
+        %create video object for reading
         v =VideoReader(fpath); %#ok<TNMLP>
         
         if isfield(fountain_start_end,basefname)
@@ -118,11 +137,26 @@ for nn = 1:NN%:-1:1%:NN
             vidframeb = imbinarize(vidframe,mid_graythreshold);
         end
         
+
+
+
+        %% Loop over frames to determine fountain properties
+        
+        % Initialize video writer if saving the updating figure
+        if options.WriteFountainVideo
+            fout_videoname = [fdir basefname '_processed.mp4'];
+            fountain_video = VideoWriter(fout_videoname , 'MPEG-4');
+            fountain_video.FrameRate = 15;
+            fountain_video.Quality = 90;
+            open(fountain_video)
+        end
+        
         % Initialize variables
         [fountain_height_pix,frame_number,y_interface,y_fountain,swell_width_]=deal(zeros(50e3,1));
         vidframezeros = zeros(size(vidframe0));
         ii = 0;
         
+        % main loop over frames                
         while hasFrame(v)
             ii = ii+1; % counter
             
@@ -147,11 +181,6 @@ for nn = 1:NN%:-1:1%:NN
             if first_left_hole < size(vidframeb_clean)/2
                 vidframeb_clean = imfill(vidframeb_clean,first_left_hole);
             end
-            
-            
-            
-            % SOMETHING LIKE THIS SHOWS PROMISE FOR FILLING IN THE LIGHT SPOTS ON FOUNTAIN
-            %              figure; imshow(~imfill(~(vf2b-(imsubtract(vidframe,vidframe0)>10)),'holes'))
             
             
             % find and clean weird left edge noise
@@ -187,9 +216,86 @@ for nn = 1:NN%:-1:1%:NN
             if strcmp(CaseCode, 'Da') % water experiments                
 %                 background_thresh_y = mean(vidframe0,2); % find background lighting as a function of y
                 vidframeb_clean(vidframe>vidframe0*1.3) = 0; % Any pixel that is much brighter than the original background is assumed to be water (reflecting/transmitting light)
-                vidframeb_clean(vidframe<vidframe0/1.3) = 0; % Any pixel that is much darker than the original background is assumed to be water (handles curvature at edges of structures)
+                vidframeb_clean(vidframe<vidframe0/1.2) = 0; % Any pixel that is much darker than the original background is assumed to be water (handles curvature at edges of structures)
                 vidframeb_clean = ~imfill(~vidframeb_clean,'holes');
                 vidframeb_clean = imfill(vidframeb_clean,'holes'); % Remove bright droplets that were filled in by the above process
+                
+                % Clear droplets exiting the left and right side
+                first_left_hole = find(~vidframeb_clean,1);
+                if first_left_hole < size(vidframeb_clean,1)/2
+                    vidframeb_clean = imfill(vidframeb_clean,first_left_hole);
+                end
+                
+                first_right_hole = find(~fliplr(vidframeb_clean),1);                
+                if first_right_hole < size(vidframeb_clean,1)/2
+                    vidframeb_clean = fliplr(imfill(fliplr(vidframeb_clean),first_right_hole));
+                end
+                
+                % Deal with reflection at the bottom, giving a false early bottom of the fountain
+                % Find the contour that touches both sides to determine the surface
+                vidframeb_clean_contours = contourc(double(vidframeb_clean),1);
+                k = 0;
+                contour_ind = 1;
+                contour_data = struct('level',0,'numpoints',0,'x',0,'y',0);
+                while contour_ind < length(vidframeb_clean_contours)                   
+                    k = k+1;
+                    contour_data(k).level = vidframeb_clean_contours(1,contour_ind);
+                    contour_data(k).numpoints = vidframeb_clean_contours(2,contour_ind);
+                    contour_data(k).x = vidframeb_clean_contours(1,contour_ind+(1:contour_data(k).numpoints));
+                    contour_data(k).y = vidframeb_clean_contours(2,contour_ind+(1:contour_data(k).numpoints));
+                    contour_ind = contour_ind + contour_data(k).numpoints + 1;
+                    
+                    % If the contour has data at both sides, you found the surface. Stop lookign.
+                    if any(contour_data(k).x) == 1 && any(contour_data(k).x == size(vidframeb_clean,2))
+                        left_surface_boundary_ind = ceil(contour_data(k).y(contour_data(k).x==1));
+                        right_surface_boundary_ind = ceil(contour_data(k).y(contour_data(k).x==size(vidframeb_clean,2)));
+                        right_hole_ind = numel(vidframeb_clean) -size(vidframeb_clean,1) + (right_surface_boundary_ind:size(vidframeb_clean,2)) ;
+                        left_hole_ind = (left_surface_boundary_ind:size(vidframeb_clean,2));
+                        vidframeb_clean = ~imfill(~vidframeb_clean,right_hole_ind(:));
+                        vidframeb_clean = ~imfill(~vidframeb_clean,left_hole_ind(:));                        
+                        break
+                    end
+                end
+                
+                
+                % Tried looking for holes on the right side, but that didn't work well.
+                if false
+                    vidframe0b_right = vidframe0b(:,end);   
+                    color_flip_ind0 = find(diff([vidframe0b_right(1); vidframe0b_right]));  
+                    if length(color_flip_ind0) > 1 && mod(length(color_flip_ind0),2)==1 % Does it change color more than once on the right side & an odd number of times
+                       right_hole_ind = numel(vidframeb_clean) -size(vidframeb_clean,1) + (color_flip_ind0(end-1):color_flip_ind0(end));
+                       vidframeb_clean = ~imfill(~vidframeb_clean,right_hole_ind(:));
+                    end
+                end
+            
+            % Still get the contours, even if not looking at water
+            elseif strcmp(CaseCode,'Db')
+                % Deal with reflection at the bottom, giving a false early bottom of the fountain
+                % Find the contour that touches both sides to determine the surface
+                vidframeb_clean_contours = contourc(double(vidframeb_clean),1);
+                k = 0;
+                contour_ind = 1;
+                contour_data = struct('level',0,'numpoints',0,'x',0,'y',0);
+                while contour_ind < length(vidframeb_clean_contours)                   
+                    k = k+1;
+                    contour_data(k).level = vidframeb_clean_contours(1,contour_ind);
+                    contour_data(k).numpoints = vidframeb_clean_contours(2,contour_ind);
+                    contour_data(k).x = vidframeb_clean_contours(1,contour_ind+(1:contour_data(k).numpoints));
+                    contour_data(k).y = vidframeb_clean_contours(2,contour_ind+(1:contour_data(k).numpoints));
+                    contour_ind = contour_ind + contour_data(k).numpoints + 1;
+                    
+                    % If the contour has data at both sides, you found the surface. Stop lookign.
+                    if any(contour_data(k).x) == 1 && any(contour_data(k).x == size(vidframeb_clean,2))
+                        left_surface_boundary_ind = ceil(contour_data(k).y(contour_data(k).x==1));
+                        right_surface_boundary_ind = ceil(contour_data(k).y(contour_data(k).x==size(vidframeb_clean,2)));
+                        right_hole_ind = numel(vidframeb_clean) -size(vidframeb_clean,1) + (right_surface_boundary_ind:size(vidframeb_clean,2)) ;
+                        left_hole_ind = (left_surface_boundary_ind:size(vidframeb_clean,2));
+                        vidframeb_clean = ~imfill(~vidframeb_clean,right_hole_ind(:));
+                        vidframeb_clean = ~imfill(~vidframeb_clean,left_hole_ind(:));                        
+                        break
+                    end
+                end
+                
             end
             
             
@@ -210,9 +316,11 @@ for nn = 1:NN%:-1:1%:NN
             fountain_height_pix(ii) = y_interface(ii) - y_fountain(ii);
             fountain_height = fountain_height_pix(ii)*m_per_pixel;
             
+
             % Plots fountain in real time
-            if true %|| ii > 133
-                figure(1)
+            if options.PlotFountain %|| ii > 133
+                
+                gg = figure(1);
                 try % Commented commands should increase performance, but some internal bug is breaking things after a set number of frames;
                     if exist('hh','var')
                         hh.CData = [vidframeb_clean*255, vidframe];
@@ -220,10 +328,15 @@ for nn = 1:NN%:-1:1%:NN
                         hh = imshowpair(vidframeb_clean,vidframe,'montage');
                     end
                     hold on
+                                        
+                    % plot the red lines to show height of interface & the contour of the surface
                     if exist('p1','var')
+                        p3.XData = contour_data(end).x;
+                        p3.YData = contour_data(end).y;
                         p1.YData = y_interface(ii)*[1,1];
                         p2.YData = y_fountain(ii)*[1,1];
                     else
+                        p3 = plot(contour_data(end).x,contour_data(end).y,'b');
                         p1 = plot([0,size(vidframe_ind_x,2)], y_interface(ii)*[1,1],'r','linewidth',2);
                         p2 = plot([0,size(vidframe_ind_x,2)], y_fountain(ii)*[1,1],'r','linewidth',2);
                     end
@@ -233,12 +346,10 @@ for nn = 1:NN%:-1:1%:NN
                         xscalebar = size(vidframeb_clean,2)*0.9+[0,pix_per_mm];
                         yscalebar = size(vidframeb_clean,1)*0.05*[1,1];
                         p_scale=plot(xscalebar,yscalebar,'k');
-                        tt2 = text(0.45,0.97,'1 mm','units','normalized');
+                        tt2 = text(0.45,0.97,'1 mm','units','normalized','FontWeight','bold');
                         
-                        %What case and date are this.
-                        CaseLabel = strsplit(basefname,'_');
-                        baseCaseLabel = [CaseLabel{1} ' ' CaseLabel{2}];
-                        tt3 = text(0.225,0.97,sprintf('%s',baseCaseLabel),'units','normalized'); % Label the top
+
+                        tt3 = text(0.225,0.97,sprintf('%s',baseCaseLabel),'units','normalized','FontWeight','bold'); % Label the top
                         
                         myax=gca;
                         myax.Box='off';
@@ -253,12 +364,15 @@ for nn = 1:NN%:-1:1%:NN
                         YTickLabels(ytick0_index:end) = 0:-1:-(length(YTickLabelOrder)-ytick0_index);
                         myax.YTickLabel=cellstr(num2str(YTickLabels));
                         ylabel('mm')
+                        myax.FontSize=14;
+                    elseif ~strcmp(tt3.String,baseCaseLabel)
+                        tt3.String = baseCaseLabel;
                     end
                     
                     if exist('tt1','var')
                         tt1.String = sprintf('t=%f',frame_number(ii)/fps);
                     else
-                        tt1 = text(0.025,0.975,sprintf('t=%f',frame_number(ii)/fps),'units','normalized');
+                        tt1 = text(0.025,0.975,sprintf('t=%f',frame_number(ii)/fps),'units','normalized','FontWeight','bold');
                     end
                     
                     hold off
@@ -270,16 +384,19 @@ for nn = 1:NN%:-1:1%:NN
                         break;
                     end
                 catch myerror
+                    fprintf('Broke at line %d; nn = %d, ii = %d, Case: %s\n',myerror.stack.line,nn,ii,fname)
+                    disp( getReport( myerror, 'extended', 'hyperlinks', 'on' ) );
                     continue
                 end
             end
             %             fprintf('%d, ',ii); if mod(ii,20)==0; fprintf('\n');; end
             
             % Analyze the fountain at its peak
-            if max_analysis_flag && false
+            swell_width = 0;% This is just to appease the structure at the end when this section is skipped
+            if options.max_analysis_flag 
                 %                 disp(fountain_height_pix(ii)/pix_per_mm*1e-3 / max(fountain_data(nn).fountain_height))
                 % THE 15e-3 MAY NEED TO BE CALIBRATED FOR EACH EXPERIMENTAL SET
-                if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) || true
+                if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) %|| true
 %                     fprintf('Fountain Height: %f mm\n',fountain_height_pix(ii)/pix_per_mm)
                     
                     fountain_height_max = fountain_height_pix(ii)/pix_per_mm*1e3;
@@ -337,16 +454,42 @@ for nn = 1:NN%:-1:1%:NN
                     
                     %delete(psLR);
                     % Break at max fountain height
-                    if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7)
+                    if round(max(fountain_data(nn).fountain_height(fountain_data(nn).time<15e-3)),7) == round(fountain_height_pix(ii)/pix_per_mm*1e-3,7) && false
                         break
                     end
+                    
+                    contour_xmax = contour_data(end).x;
+                    contour_ymax = contour_data(end).y;
+                    
+                    % Used to plot the fountain at its maximum
+                    true;
+                    if false
+                        if strcmp(CaseCode,'Db') && strcmp(date_of_experiment,'20180424')
+                            g2 = figure(2); clf(2); imshow(vidframe(108:468,176:410)); hold on; plot([190,190+range(xscalebar)],[24,24],'w'); text(0.8,0.97,'1 mm','units','normalized','FontWeight','bold','Color','w');
+                        elseif strcmp(CaseCode,'Da') && strcmp(date_of_experiment,'20180417')                            
+                            g2 = figure(2); clf(2); imshow(vidframe(1:468,176:350)); hold on; plot([190,190+range(xscalebar)],[24,24],'w'); text(0.8,0.97,'1 mm','units','normalized','FontWeight','bold','Color','w');
+                        end
+%                         export_fig(g2,sprintf('%s%s_max',paperfigdir,baseCaseLabel),'-r400','-png');
+%                         continue
+                    end
+                    
+                    psLR
+                    
                 end
                 
                 
             end
             
+            if options.WriteFountainVideo
+               writeVideo(fountain_video,getframe(gg))
+            end
+            
+            
+            
         end
-        
+        if options.WriteFountainVideo
+            close(fountain_video)
+        end
         % remove trailing zeros and data from far before the fountain
         flast = find(fountain_height_pix,1,'last');
         
@@ -374,7 +517,7 @@ for nn = 1:NN%:-1:1%:NN
         fountain_data(nn).fountain_height_pix = fountain_height_pix;
         fountain_data(nn).m_per_pix = getscale(fountain_data(nn).CaseCode,fountain_data(nn).date_of_experiment);
         fountain_data(nn).fountain_height = fountain_data(nn).fountain_height_pix * fountain_data(nn).m_per_pix;
-        fountain_data(nn).fountain_height_max = fountain_height_max;
+        fountain_data(nn).fountain_height_max = max(fountain_height);
         fountain_data(nn).swell_width = swell_width;
         fountain_data(nn).y_interface = y_interface;
         fountain_data(nn).y_fountain = y_fountain;
@@ -383,6 +526,8 @@ for nn = 1:NN%:-1:1%:NN
         fountain_data(nn).frame_number = frame_number;
         fountain_data(nn).camera_data = camera_data;
         fountain_data(nn).swell_width = swell_width_;
+        fountain_data(nn).contour_x = contour_xmax;
+        fountain_data(nn).contour_y = contour_ymax;
         
         % Save the frames to analyze next time (used for faster analysis, only look at frames w/ fountain)
         if f0~=1
@@ -394,7 +539,10 @@ for nn = 1:NN%:-1:1%:NN
         toc
         
     catch myerror
-        fprintf('Broke at nn = %d, ii = %d, Case: %s\n',nn,ii,fname)
+        fprintf('Broke at line %d; nn = %d, ii = %d, Case: %s\n',myerror.stack.line,nn,ii,fname)
+        disp( getReport( myerror, 'extended', 'hyperlinks', 'on' ) );
+        if options.WriteFountainVideo; close(fountain_video); end
+%         rethrow(myerror)
         toc
         continue
         rethrow(myerror)
@@ -416,7 +564,7 @@ try
         clf(4)
         axes;
         mycolors = get(gca,'ColorOrder');
-        jj0=5;
+        jj0=1;
         for jj = jj0:42
             pp(jj) = plot(fountain_data(jj).time(1:length(fountain_data(jj).fountain_height))*1e3,fountain_data(jj).fountain_height*1e3,'Color',mycolors(floor((jj-1)/6)+1,:));
             hold on
@@ -425,13 +573,13 @@ try
         ylabel('Fountain height (mm)')
         legend(pp(jj0:6:end),'-00 dB', '-02 dB', '-04 dB', '-06 dB', '-08 dB', '-10 dB', '-12 dB')
         spiffyp(hhh)
-        xlim([0,35])
+        xlim([0,13.5])
     end
 catch
 end
 
 % save the data (overwrites existing data, so false by default)
-if false
+if options.saveFountainData
     save(sprintf('%s/fountain_data_%s_%s.mat',fdir,CaseCode,fountain_data(nn).date_of_experiment),'fountain_data')
 end
 

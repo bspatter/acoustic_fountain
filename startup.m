@@ -26,7 +26,9 @@ set(0,'defaultfigurecolor',[1 1 1])
 % set(0,'DefaultFigurePaperPositionMode','manual')
 set(groot,'defaultLineLineWidth',2)
 
-set(0,'DefaultAxesColorOrder',mycolororder())
+if exist('mycolororder','file')
+    set(0,'DefaultAxesColorOrder',mycolororder())
+end
 
 
 
